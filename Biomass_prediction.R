@@ -2,10 +2,10 @@ library(readxl)
 library(dplyr)
 library(stringr)
 
-rawdat<- read_excel("ABSsecondround/Labbook.xlsx")
+rawdat<- read_excel("Rawdata/Labbook.xlsx")
 rawdat$Bag_w<- as.numeric(rawdat$Bag_w)
 
-biomass<- read_excel("ABSsecondround/Labbook.xlsx", "Hyphae processing")
+biomass<- read_excel("Rawdata/Labbook.xlsx", "Hyphae processing")
 #new weight adding reps -both for bag_w and dry_w
 
 formuladata <- rawdat %>%
@@ -54,3 +54,11 @@ select(Name,ID, harvest_w, dry_w, total_W)
 single.lm<-lm(total_W ~  dry_w, newdat)# building a model
 car::Anova(single.lm) 
 summary(single.lm)
+
+single2.lm<-lm(total_W ~  harvest_w, newdat)# building a model
+car::Anova(single2.lm) 
+summary(single2.lm)
+
+compound.lm<-lm(total_W ~  harvest_w+dry_w, newdat)# building a model
+car::Anova(compound.lm) 
+summary(compound.lm)
