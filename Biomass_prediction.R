@@ -42,9 +42,10 @@ newdat <- formuladata %>%
 newdat <- newdat %>%
   distinct(Name, harvest_w, dry_w, .keep_all = TRUE)%>%
   select(Name, harvest_w, dry_w)
-
+biomass <- biomass %>%
+  mutate(Name= newdat$Name)
 #add to the new dataset the columns with the total weight of the hyphae
-newdat<- cbind(newdat, biomass)
+newdat<- left_join(newdat, biomass)
 newdat <- newdat %>%
   select(Name,ID, harvest_w, dry_w, total_W)
 
