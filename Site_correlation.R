@@ -1,10 +1,10 @@
 library(dplyr)
 library(readxl)
 
-site_data<- read.csv("Rawdata/site_data_Amaia.csv")
+site_data<- read.csv("raw/site_data_Amaia.csv")[,-1]
 secondround_data <- site_data %>%
   filter(Site %in% c(7, 8 , 10, 12 , 26, 34))
-diam_data<- read_excel("Rawdata/Updated hyphal length.xlsx")
+diam_data<- read_excel("raw/Updated hyphal length.xlsx")
 
 diam_summary <- diam_data %>%
   mutate(Site = sub("^(S)( *)", "\\2", Site))%>%
@@ -34,3 +34,64 @@ diamVeg <- lm(diamMax_Value~ Nitrogen, diam_site)
 
 car::Anova(diamVeg)   #[instead of anova function given by WUR]
 #post hoc LSD test to
+
+################
+#Sol script
+
+data<-diam_data%>%
+  group_by(Site,Transect,Location)%>%
+  #calcualte Coefficient of variation
+  summarise(CV_Length = sd(Length_mm, na.rm = TRUE) / mean(Length_mm, na.rm = TRUE))%>%
+  left_join(diam_data)%>%
+  mutate(Site = sub("^(S)( *)", "\\2", Site),
+         Transect = sub("^(T)( *)", "\\2", Transect))%>%
+  left_join(secondround_data%>%
+              mutate(Site=as.character(Site),
+                     Transect=as.character(Transect)))%>%
+  left_join(diam_data)
+
+
+#YOU could also add your ph data to this and test 
+
+library(lme4)
+library(car)
+library(emmeans)
+#Check the distribution of the response variable, you want this to be normalish
+hist(data$Length_mm)
+hist(log10(data$Length_mm))
+data%>%tail() %>%  # Selects the last 6 rows of the dataframe
+  arrange(Length_mm) 
+
+data<-data%>%mutate(Log_Length=log10(Length_mm+.001/2))#adding lowest value above 0 divided by 2 (can talk about why
+#BUT how did you measure 0 length?
+
+#one example of a model you could build using length as a response
+model_1<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Bray.P+ (1|Site/Transect) , 
+                           data=data)
+
+summary(model_1)
+Anova_1<-round(Anova(model_1,test='F'), 2) 
+Anova_1
+plot(model_1)
+qqPlot(resid(model_1))
+library(performance)
+r2(model_1)
+Log_length<-as.data.frame(emmeans(model_1, ~Fire.Severity))
+Log_length
+plot(Log_length)
+
+
+#one example of a model you could build using the variation in length as a response
+model_2<-lmer(CV_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Bray.P+ (1|Site/Transect) , 
+              data=data)
+
+summary(model_2)
+Anova_2<-round(Anova(model_2,test='F'), 2) 
+Anova_2
+plot(model_2)
+qqPlot(resid(model_2))
+library(performance)
+r2(model_2)
+Log_length<-as.data.frame(emmeans(model_2, ~Fire.Severity))
+Log_length
+plot(Log_length)
