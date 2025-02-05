@@ -7,7 +7,7 @@ library(multcompView)
 
 
 # Read the Excel file
-alldata<- read_excel("Labbook.xlsx", "soil pH")
+alldata<- read_excel("raw/Labbook.xlsx", "soil pH")
 
 #see if the weight influences pH
 weight.lm <- lm(formula = pH ~ Soil_weight , data = alldata)
@@ -22,22 +22,22 @@ alldata <- alldata %>%
   select(-gr)
 
 #delete reps
-alldata <- alldata %>%
+pH_data <- alldata %>%
   filter(!is.na(Avg_pH)) %>%
   select(-Rep) %>%
   select(-pH)
 
 #group half transects
-alldata <- alldata %>%
+pH_data <- pH_data %>%
   mutate(HalfT = case_when(
     as.numeric(sub("L", "", Location)) < 20 ~ "A",  # Less than L20
     as.numeric(sub("L", "", Location)) > 30 ~ "B",  # Greater than L30
   ))
 #see if pH means are sigdif between halftransects
-alldata <- alldata %>% #naming the half transects
+pH_data <- pH_data %>% #naming the half transects
   mutate(Name= paste0(Site, Transect, HalfT))
 
-single.lm<-lm(Avg_pH ~ Name, alldata)# building a model
+single.lm<-lm(Avg_pH ~ Name, pH_data)# building a model
 car::Anova(single.lm)   #[instead of anova function given by WUR]
 #post hoc LSD test to 
 
@@ -81,4 +81,5 @@ ggplot(alldata, aes(x = Name, y = Avg_pH)) +
        y = "Value")
 
 
+write.csv(pH_data, "outputs/pH_output.csv", row.names = FALSE)
 
