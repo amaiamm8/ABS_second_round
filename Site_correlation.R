@@ -1,12 +1,23 @@
 library(dplyr)
 library(readxl)
 ph_data<- read.csv("outputs/pH_output.csv")
-site_data<- read.csv("raw/site_data_Amaia.csv")[,-1]
+site_data<- read.csv("raw/site_data_Amaia.csv")[,-1] #ignoring the first column
+biomass<- read_excel("raw/Labbook.xlsx", "Indiv weights")[,-4]
+  biomass$Tube_ID<- as.character(biomass$Tube_ID)
+generic<- read_excel("raw/Labbook.xlsx")
+generic<- generic %>%
+  distinct(Site, Transect, Location,.keep_all= TRUE) %>%
+  select(Site, Transect, Location, Tube_ID)
+biomass <- biomass%>%
+  full_join(generic, by= "Tube_ID")
+  
 secondround_data <- site_data %>%
   filter(Site %in% c(7, 8 , 10, 12 , 26, 34))
 diam_data<- read_excel("raw/Updated hyphal length.xlsx")
 diam_data <- diam_data %>%
   filter(Length_mm != 0)
+######
+#Amaia's idea
 diam_summary <- diam_data %>%
   mutate(Site = sub("^(S)( *)", "\\2", Site))%>%
   mutate(Transect = sub("^(T)( *)", "\\2", Transect))%>%
@@ -37,7 +48,7 @@ car::Anova(diamVeg)   #[instead of anova function given by WUR]
 
 ################
 #Sol script
-pH_data
+  #"data" contains ALL data (biomass, diameter, ph, site data)
 data<-diam_data%>%
   group_by(Site,Transect,Location)%>%
   #calculate Coefficient of Variation (CV= sd/mean)
@@ -48,7 +59,10 @@ data<-diam_data%>%
   left_join(secondround_data%>%
               mutate(Site=as.character(Site),
                      Transect=as.character(Transect)))%>%
-  left_join(pH_data%>%  
+  left_join(ph_data%>%  
+              mutate(Site = sub("^(S)( *)", "\\2", Site),
+                    Transect = sub("^(T)( *)", "\\2", Transect)))%>%
+  left_join(biomass%>%  
               mutate(Site = sub("^(S)( *)", "\\2", Site),
                     Transect = sub("^(T)( *)", "\\2", Transect)))
 
@@ -71,11 +85,12 @@ data<-data%>%mutate(Log_Length=log10(Length_mm+.001/2))#adding lowest value abov
 #one example of a model you could build using length as a response
 model_1<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Bray.P+ (1|Site/Transect) , 
                            data=data)
-# ^the model above gives: boundary (singular) fit: see help('isSingular')
+    #(1|Site/Transect) means nesting the transect within the site
+# ^the model above gives: boundary (singular) fit: see help('isSingular')- deleting Transect OR Site removes error
 summary(model_1)
-library(car)
+
 Anova_1<-round(Anova(model_1,test='F'), 2) 
-Anova_1
+Anova_1 #only Fire.Severity significant (0.05) (in Transect)not in Site
 plot(model_1)
 qqPlot(resid(model_1))
 install.packages("performance")
