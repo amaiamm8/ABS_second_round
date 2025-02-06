@@ -5,9 +5,12 @@ library(stringr)
 rawdat<- read_excel("raw/Labbook.xlsx")
 rawdat$Bag_w<- as.numeric(rawdat$Bag_w)
 
-biomass<- read_excel("raw/Labbook.xlsx", "Hyphae processing")
-#new weight adding reps -both for bag_w and dry_w
+biomass<- read_excel("raw/Labbook.xlsx", "Indiv weights")[,-4]
+biomass<- biomass%>%
+  mutate(Tube_ID= as.character(Tube_ID)) %>%
+  rename(hyphal_weight = weight)
 
+#new weight adding reps -both for bag_w and dry_w
 formuladata <- rawdat %>%
   group_by(gr = cumsum(Rep == "A")) %>%  # Group every pair of A/B
   mutate(
@@ -17,12 +20,42 @@ formuladata <- rawdat %>%
   ungroup() %>%
   select(-gr)
 
+formuladata<- full_join(formuladata, biomass, by= "Tube_ID")
+
 #if notes "D-*" or "no bag retrieved" remove from new dataset 
 formuladata <- formuladata %>%
-  filter(!is.na(Bag_w))%>%
-  filter(is.na(Notes) | Notes == "" | !str_detect(Notes, "^D-"))
+  filter(!is.na(harvest_w))%>%
+  filter(is.na(Notes.x) | Notes.x == "" | !str_detect(Notes.x, "^D-"))
 
-#add up these per halftransect 
+
+formuladata <- formuladata %>%
+  distinct(Site, Transect, Location, .keep_all = TRUE)%>%
+  select(Site, Transect, Location,Tube_ID, harvest_w, dry_w, hyphal_weight)
+
+
+#add to the new dataset the columns with the total weight of the hyphae
+
+cor(formuladata$hyphal_weight, formuladata$harvest_w, method = "pearson")
+cor(formuladata$hyphal_weight, formuladata$harvest_w, method = "spearman")
+
+single.lm<-lm(hyphal_weight ~  dry_w, formuladata)# building a model
+car::Anova(single.lm) 
+summary(single.lm)
+
+single2.lm<-lm(hyphal_weight ~  harvest_w, formuladata)# building a model
+car::Anova(single2.lm) 
+summary(single2.lm)
+
+compound.lm<-lm(hyphal_weight ~  harvest_w+dry_w, formuladata)# building a model
+car::Anova(compound.lm) 
+summary(compound.lm)
+
+
+
+
+
+
+#TO DO THE CALCULATIONS PER HALF TRANSECTS
 #group half transects
 formuladata <- formuladata %>%
   mutate(HalfT = case_when(
@@ -33,35 +66,12 @@ formuladata <- formuladata %>%
 
 
 newdat <- formuladata %>%
-  group_by(Name) %>%  # Group by the 'Name' column
+  group_by(Site, Transect, Location) %>%  # Group by the 'Name' column
   mutate(
     harvest_w = sum(harvest_w, na.rm = TRUE),  # Sum of harvest_w for each Name
     dry_w = sum(dry_w, na.rm = TRUE)           # Sum of dry_w for each Name
   ) %>%
   ungroup()  # Remove grouping
 newdat <- newdat %>%
-  distinct(Name, harvest_w, dry_w, .keep_all = TRUE)%>%
-  select(Name, harvest_w, dry_w)
-biomass <- biomass %>%
-  mutate(Name= newdat$Name)
-#add to the new dataset the columns with the total weight of the hyphae
-newdat<- left_join(newdat, biomass)
-newdat <- newdat %>%
-  select(Name,ID, harvest_w, dry_w, total_W)
-
-
-single.lm<-lm(total_W ~  dry_w, newdat)# building a model
-car::Anova(single.lm) 
-summary(single.lm)
-
-single2.lm<-lm(total_W ~  harvest_w, newdat)# building a model
-car::Anova(single2.lm) 
-summary(single2.lm)
-
-compound.lm<-lm(total_W ~  harvest_w+dry_w, newdat)# building a model
-car::Anova(compound.lm) 
-summary(compound.lm)
-
-cor(newdat$total_W, newdat$harvest_w, method = "pearson")
-cor(newdat$total_W, newdat$harvest_w, method = "spearman")
-
+  distinct(Site, Transect, Location, harvest_w, dry_w, .keep_all = TRUE)%>%
+  select(Site, Transect, Location, harvest_w, dry_w, Tube_ID)
