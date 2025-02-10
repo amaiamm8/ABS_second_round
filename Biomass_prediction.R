@@ -51,8 +51,21 @@ car::Anova(compound.lm)
 summary(compound.lm)
 
 
+library(mgcv)
+model_size <- gam(hyphal_weight ~ harvest_w, data = formuladata)
+# Fit a GLM with a Gaussian distribution (normal distribution)
+model_glm <- glm(hyphal_weight ~ harvest_w,
+                 family = gaussian(link = "identity"), 
+                 data = formuladata)
 
+# Check model summary
+summary(model_glm)
+plot(model_glm$residuals)
 
+# View the model summary
+summary(model_size)
+plot(model_size$residuals)
+r2(model_glm)
 
 
 #TO DO THE CALCULATIONS PER HALF TRANSECTS

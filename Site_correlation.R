@@ -80,11 +80,25 @@ library(Matrix)
 library(lme4)
 library(car)
 library(emmeans)
+
 #Check the distribution of the response variable, you want this to be normalish
+#trying different transformations
 hist(data$Length_mm)
 hist(log10(data$Length_mm))
+data$Log_Length1 <- log(data$Length_mm + 0.001)
+hist(data$Log_Length)
+data$Sqrt_Length <- sqrt(data$Length_mm)
+hist(data$Sqrt_Length)
+data$Inv_Length <- 1 / data$Length_mm
+hist(data$Inv_Length)
+wilcox.test (data$Length_mm)
+qqnorm((data$Sqrt_Length), main = "Q-Q Plot of Length_mm")
+qqline((data$Sqrt_Length), col = "red")
+
 data%>%tail() %>%  # Selects the last 6 rows of the dataframe
   arrange(Length_mm) 
+
+
 
 data<-data%>%mutate(Log_Length=log10(Length_mm+.001/2))#adding lowest value above 0 divided by 2 (can talk about why
 #BUT how did you measure 0 length?- results from Mosaic! but have deleted them now at the top
@@ -118,6 +132,7 @@ Anova_2<-round(Anova(model_2,test='F'), 2)
 Anova_2
 plot(model_2)
 qqPlot(resid(model_2))
+install.packages("performance")
 library(performance)
 r2(model_2)
 Log_length<-as.data.frame(emmeans(model_2, ~Fire.Severity))
@@ -126,7 +141,7 @@ plot(Log_length)
 
 
 
-#Attempting to build a JSDM of soome sort
+#Attempting to build a JSDM of some sort
 
 
 # Load necessary packages
@@ -139,11 +154,14 @@ library(ggplot2)
 
 # Fit a Generalized Additive Model (GAM) to predict trait distribution
 # Example: Modeling the distribution of size trait with environmental predictors
-model_size <- gam(Length_mm ~ Fire.Interval + Fire.Severity + Most.Recent.Fire_Year+ Avg_pH + Litter.Cover_20mm_perc + Bray.P +(1|Site), data = data)
+model_size <- gam(Length_mm ~ Fire.Interval + Fire.Severity + Most.Recent.Fire_Year+ Avg_pH + Litter.Cover_20mm_perc + Bray.P, data = data)
 
 # View the model summary
 summary(model_size)
+plot(model_size$residuals)
 
+
+#ATTEMPTING A PCA
 # Load necessary libraries
 install.packages("brms")
 library(brms)
