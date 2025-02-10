@@ -1,11 +1,32 @@
 library(dplyr)
 library(readxl)
+<<<<<<< HEAD
 
 site_data<- read.csv("raw/site_data_Amaia.csv")[,-1]
 secondround_data <- site_data %>%
   filter(Site %in% c(7, 8 , 10, 12 , 26, 34))
 diam_data<- read_excel("raw/Updated hyphal length.xlsx")
 
+=======
+ph_data<- read.csv("outputs/pH_output.csv")
+site_data<- read.csv("raw/site_data_Amaia.csv")[,-1] #ignoring the first column
+biomass<- read_excel("raw/Labbook.xlsx", "Indiv weights")[,-4]
+  biomass$Tube_ID<- as.character(biomass$Tube_ID)
+generic<- read_excel("raw/Labbook.xlsx")
+generic<- generic %>%
+  distinct(Site, Transect, Location,.keep_all= TRUE) %>%
+  select(Site, Transect, Location, Tube_ID)
+biomass <- biomass%>%
+  full_join(generic, by= "Tube_ID")
+  
+secondround_data <- site_data %>%
+  filter(Site %in% c(7, 8 , 10, 12 , 26, 34))
+diam_data<- read_excel("raw/Updated hyphal length.xlsx")
+diam_data <- diam_data %>%
+  filter(Length_mm != 0)
+######
+#Amaia's idea
+>>>>>>> 3014fe175908234d5ad93e30d9989d1402e8c31a
 diam_summary <- diam_data %>%
   mutate(Site = sub("^(S)( *)", "\\2", Site))%>%
   mutate(Transect = sub("^(T)( *)", "\\2", Transect))%>%
@@ -24,8 +45,7 @@ diam_site$Fire.Severity <- as.factor(diam_site$Fire.Severity)
 
 # Perform full joins on all three datasets
 diam_site <- diam_summary %>%
-  full_join(secondround_data, by = c("Site", "Transect")) %>%
-  select(-X)
+  full_join(secondround_data, by = c("Site", "Transect"))
 
 diamint<- lm(diamMax_Value~ Fire.Severity, diam_site)
 diamfreq<- lm(diamMax_Value~ Fire.Interval*Fire.Severity, diam_site)
@@ -37,10 +57,17 @@ car::Anova(diamVeg)   #[instead of anova function given by WUR]
 
 ################
 #Sol script
+<<<<<<< HEAD
 
 data<-diam_data%>%
   group_by(Site,Transect,Location)%>%
   #calcualte Coefficient of variation
+=======
+  #"data" contains ALL data (biomass, diameter, ph, site data)
+data<-diam_data%>%
+  group_by(Site,Transect,Location)%>%
+  #calculate Coefficient of Variation (CV= sd/mean)
+>>>>>>> 3014fe175908234d5ad93e30d9989d1402e8c31a
   summarise(CV_Length = sd(Length_mm, na.rm = TRUE) / mean(Length_mm, na.rm = TRUE))%>%
   left_join(diam_data)%>%
   mutate(Site = sub("^(S)( *)", "\\2", Site),
@@ -48,11 +75,25 @@ data<-diam_data%>%
   left_join(secondround_data%>%
               mutate(Site=as.character(Site),
                      Transect=as.character(Transect)))%>%
+<<<<<<< HEAD
   left_join(diam_data)
 
 
 #YOU could also add your ph data to this and test 
 
+=======
+  left_join(ph_data%>%  
+              mutate(Site = sub("^(S)( *)", "\\2", Site),
+                    Transect = sub("^(T)( *)", "\\2", Transect)))%>%
+  left_join(biomass%>%  
+              mutate(Site = sub("^(S)( *)", "\\2", Site),
+                    Transect = sub("^(T)( *)", "\\2", Transect)))
+
+#Added your ph data to this [test]
+install.packages("Matrix", type = "source")
+install.packages("lme4", type = "source")
+library(Matrix)
+>>>>>>> 3014fe175908234d5ad93e30d9989d1402e8c31a
 library(lme4)
 library(car)
 library(emmeans)
@@ -63,11 +104,16 @@ data%>%tail() %>%  # Selects the last 6 rows of the dataframe
   arrange(Length_mm) 
 
 data<-data%>%mutate(Log_Length=log10(Length_mm+.001/2))#adding lowest value above 0 divided by 2 (can talk about why
+<<<<<<< HEAD
 #BUT how did you measure 0 length?
+=======
+#BUT how did you measure 0 length?- results from Mosaic! but have deleted them now at the top
+>>>>>>> 3014fe175908234d5ad93e30d9989d1402e8c31a
 
 #one example of a model you could build using length as a response
 model_1<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Bray.P+ (1|Site/Transect) , 
                            data=data)
+<<<<<<< HEAD
 
 summary(model_1)
 Anova_1<-round(Anova(model_1,test='F'), 2) 
@@ -75,6 +121,19 @@ Anova_1
 plot(model_1)
 qqPlot(resid(model_1))
 library(performance)
+=======
+    #(1|Site/Transect) means nesting the transect within the site
+# ^the model above gives: boundary (singular) fit: see help('isSingular')- deleting Transect OR Site removes error
+summary(model_1)
+
+Anova_1<-round(Anova(model_1,test='F'), 2) 
+Anova_1 #only Fire.Severity significant (0.05) (in Transect)not in Site
+plot(model_1)
+qqPlot(resid(model_1))
+install.packages("performance")
+library(performance)
+library(emmeans)
+>>>>>>> 3014fe175908234d5ad93e30d9989d1402e8c31a
 r2(model_1)
 Log_length<-as.data.frame(emmeans(model_1, ~Fire.Severity))
 Log_length
