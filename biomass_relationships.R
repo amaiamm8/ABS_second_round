@@ -237,3 +237,5 @@ ggplot(combined_data, aes(x = Length_mm, y = biomass_g_ha_day)) +
   theme_classic() 
 
 
+
+
