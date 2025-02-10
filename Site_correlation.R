@@ -1,23 +1,30 @@
 library(dplyr)
 library(readxl)
+#read the data
 ph_data<- read.csv("outputs/pH_output.csv")
 site_data<- read.csv("raw/site_data_Amaia.csv")[,-1] #ignoring the first column
 biomass<- read_excel("raw/Labbook.xlsx", "Indiv weights")[,-4]
   biomass$Tube_ID<- as.character(biomass$Tube_ID)
-generic<- read_excel("raw/Labbook.xlsx")
+
+  #just to add site names to tubeID
+generic<- read_excel("raw/Labbook.xlsx") 
 generic<- generic %>%
   distinct(Site, Transect, Location,.keep_all= TRUE) %>%
   select(Site, Transect, Location, Tube_ID)
 biomass <- biomass%>%
   full_join(generic, by= "Tube_ID")
-  
+
+#filtering all the site data to my sites
 secondround_data <- site_data %>%
   filter(Site %in% c(7, 8 , 10, 12 , 26, 34))
+
+#diameter data but removing the 0 lengths (estimated by mosaic)
 diam_data<- read_excel("raw/Updated hyphal length.xlsx")
 diam_data <- diam_data %>%
   filter(Length_mm != 0)
+
 ######
-#Amaia's idea
+#summarising diameter data
 diam_summary <- diam_data %>%
   mutate(Site = sub("^(S)( *)", "\\2", Site))%>%
   mutate(Transect = sub("^(T)( *)", "\\2", Transect))%>%
@@ -28,6 +35,7 @@ diam_summary <- diam_data %>%
     diamAvg_Value = mean(Avg, na.rm = TRUE),
     .groups = "drop" )
 
+#ensuring right formats
 secondround_data$Site <- as.factor(secondround_data$Site)
 secondround_data$Transect <- as.factor(secondround_data$Transect)
 diam_summary$Site <- as.factor(diam_summary$Site)
@@ -66,9 +74,8 @@ data<-diam_data%>%
               mutate(Site = sub("^(S)( *)", "\\2", Site),
                     Transect = sub("^(T)( *)", "\\2", Transect)))
 
-#Added your ph data to this [test]
-install.packages("Matrix", type = "source")
-install.packages("lme4", type = "source")
+#install.packages("Matrix", type = "source")
+#install.packages("lme4", type = "source")
 library(Matrix)
 library(lme4)
 library(car)
@@ -116,3 +123,65 @@ r2(model_2)
 Log_length<-as.data.frame(emmeans(model_2, ~Fire.Severity))
 Log_length
 plot(Log_length)
+
+
+
+#Attempting to build a JSDM of soome sort
+
+
+# Load necessary packages
+install.packages("sdm")
+library(sdm)
+library(mgcv)  # For Generalized Additive Models (GAMs)
+library(ggplot2)
+
+
+
+# Fit a Generalized Additive Model (GAM) to predict trait distribution
+# Example: Modeling the distribution of size trait with environmental predictors
+model_size <- gam(Length_mm ~ Fire.Interval + Fire.Severity + Most.Recent.Fire_Year+ Avg_pH + Litter.Cover_20mm_perc + Bray.P +(1|Site), data = data)
+
+# View the model summary
+summary(model_size)
+
+# Load necessary libraries
+install.packages("brms")
+library(brms)
+library(tidyverse)
+library(vegan)
+
+
+env_data <- data.frame(
+  Fire.Interval = data$Fire.Interval,
+  Fire.Severity = data$Fire.Severity,
+  NO3 = data$NO3,
+  NH4 = data$NH4
+)
+env_data_numeric <- env_data %>% select_if(is.numeric)
+# Assuming env_data is a data frame or matrix of environmental variables (e.g., temperature, precipitation, etc.)
+ # Standardizing the environmental data
+env_data_scaled <- scale(env_data_numeric)
+
+# Perform PCA
+pca_result <- prcomp(env_data_scaled, center = TRUE, scale. = TRUE)
+
+# Check PCA summary
+summary(pca_result)
+
+# Extract PCA scores
+pc_scores <- pca_result$x
+# Ensure pc_scores is in a data frame format
+pc_scores_df <- as.data.frame(pc_scores)  # Convert PCA scores to a data frame
+data_for_model <- cbind(pc_scores_df, Length_mm = data$Length_mm)
+
+# Include the response variable (length_mm) in the same data frame
+model_size <- brm(
+  Length_mm ~ PC1 + PC2,  # Use PCA component names as predictors
+  data = data_for_model,        # The data frame with the response and predictors
+  family = gaussian(),          # Gaussian family for continuous response
+  prior = c(set_prior("normal(0, 1)", class = "b")),  # Specify priors for the model coefficients
+  chains = 2,                   # Number of Markov chains
+  iter = 2000                   # Number of iterations per chain
+)
+
+summary(model_size)
