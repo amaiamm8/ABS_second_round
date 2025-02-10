@@ -57,19 +57,31 @@ Ortho_P_Amaia
 Blanks<-All_ortho_P%>%
   filter(str_detect(source_file, "LOT1|LOT2") & `Sample ID`=="BLANK")
 
+# Assign specific names to the 'Blanks' dataframe
+Blanks <- Blanks %>%
+  mutate(Names = c("Blank 1", "Blank 2")[1:n()])  # Adjust to fit the number of rows in Blanks
+
+#extracting nutrient weight
+nutri_weight <- Amaia_Bags%>%
+  filter(!is.na(Nutri))  %>%
+  mutate(Name = sub(".{1}$", "", Name)) %>%
+  rename(Names= Name) %>%
+  select(Nutri, Names)
+
 #bind these rows back to original df
 Ortho_P_Amaia<-Ortho_P_Amaia%>%
-  bind_rows(Blanks)
+  bind_rows(Blanks)%>%
+  left_join(nutri_weight,by= "Names")
+
+
 
 Final_Ortho_numbers<-Ortho_P_Amaia%>%  
-mutate(Blank_avg = mean(Result[grepl("BLANK", `Sample ID`)], na.rm = TRUE), 
+  mutate(Blank_avg = mean(Result[grepl("BLANK", `Sample ID`)], na.rm = TRUE), 
          Ortho_blanked = (Result-Blank_avg),
          Ortho_blanked = ifelse(Ortho_blanked < 0, 0.0288/2, Ortho_blanked),
-
 #you need to change the resin_nute_w to the weight you actually took in you bag df
-         Ortho_P_mg_kg= Ortho_blanked *(7.5/nutri_weight)/(`Manual Dil`*`Auto Dil`)) #7.5mL used for 1 g of resin
+        Ortho_P_mg_kg= Ortho_blanked *(7.5/Nutri)/(`Manual Dil`*`Auto Dil`)) #7.5mL used for 1 g of resin
 #you dont have any dilutions, but good practice to include and to make sure everything lines up
 
-Amaia_Bags<- Amaia_Bags%>%
-  filter(!is.na(Nutri))  
-nutri_weight <- Amaia_Bags$Nutri
+
+
