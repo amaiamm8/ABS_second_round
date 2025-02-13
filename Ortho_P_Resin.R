@@ -77,10 +77,12 @@ Ortho_P_Amaia<-Ortho_P_Amaia%>%
 
 Final_Ortho_numbers<-Ortho_P_Amaia%>%  
   mutate(Blank_avg = mean(Result[grepl("BLANK", `Sample ID`)], na.rm = TRUE), 
-         Ortho_blanked = (Result-Blank_avg),
+         Dil_result = Result/(`Manual Dil`*`Auto Dil`),
+         Ortho_blanked= Dil_result- Blank_avg,
          Ortho_blanked = ifelse(Ortho_blanked < 0, 0.0288/2, Ortho_blanked),
+         Ortho_P_mg_kg= Ortho_blanked *(7.5/Nutri)) #7.5mL used for 1 g of resin
+
 #you need to change the resin_nute_w to the weight you actually took in you bag df
-        Ortho_P_mg_kg= Ortho_blanked *(7.5/Nutri)/(`Manual Dil`*`Auto Dil`)) #7.5mL used for 1 g of resin
 #you dont have any dilutions, but good practice to include and to make sure everything lines up
 write.csv(Final_Ortho_numbers, "outputs/Ortho_P.csv", row.names = FALSE)
 
