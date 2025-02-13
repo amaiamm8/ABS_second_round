@@ -82,6 +82,7 @@ Final_Ortho_numbers<-Ortho_P_Amaia%>%
 #you need to change the resin_nute_w to the weight you actually took in you bag df
         Ortho_P_mg_kg= Ortho_blanked *(7.5/Nutri)/(`Manual Dil`*`Auto Dil`)) #7.5mL used for 1 g of resin
 #you dont have any dilutions, but good practice to include and to make sure everything lines up
+write.csv(Final_Ortho_numbers, "outputs/Ortho_P.csv", row.names = FALSE)
 
 
 
