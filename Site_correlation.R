@@ -8,6 +8,15 @@ secondround_data <- site_data %>%
 diam_data<- read_excel("raw/Updated hyphal length.xlsx")
 
 ph_data<- read.csv("outputs/pH_output.csv")
+
+Ortho_P<- read.csv("outputs/Ortho_P.csv")
+Ortho_P <- Ortho_P %>%
+  mutate(Site = sub("^(S\\d+).*", "\\1", Names),
+    Transect = sub(".*(T\\d+).*", "\\1", Names),  
+    Location = sub(".*(L\\d+)$", "\\1", Names)  
+  )%>%
+  select(Site, Transect, Location, Ortho_blanked, Ortho_P_mg_kg)
+
 site_data<- read.csv("raw/site_data_Amaia.csv")[,-1] #ignoring the first column
 biomass<- read_excel("raw/Labbook.xlsx", "Indiv weights")[,-4]
   biomass$Tube_ID<- as.character(biomass$Tube_ID)
@@ -65,8 +74,6 @@ car::Anova(diamVeg)   #[instead of anova function given by WUR]
 ################
 #Sol script
 
-data<-diam_data%>%
-  group_by(Site,Transect,Location)%>%
   #calculate Coefficient of variation
   #"data" contains ALL data (biomass, diameter, ph, site data)
 data<-diam_data%>%
@@ -79,17 +86,19 @@ data<-diam_data%>%
   left_join(secondround_data%>%
               mutate(Site=as.character(Site),
                      Transect=as.character(Transect)))%>%
-  left_join(diam_data)
-
-
-#YOU could also add your ph data to this and test 
-
   left_join(ph_data%>%  
               mutate(Site = sub("^(S)( *)", "\\2", Site),
-                    Transect = sub("^(T)( *)", "\\2", Transect)))%>%
+                    Transect = sub("^(T)( *)", "\\2", Transect))
+            )%>%
   left_join(biomass%>%  
               mutate(Site = sub("^(S)( *)", "\\2", Site),
-                    Transect = sub("^(T)( *)", "\\2", Transect)))
+                    Transect = sub("^(T)( *)", "\\2", Transect)))%>%
+  left_join(Ortho_P%>%  
+            mutate(Site = sub("^(S)( *)", "\\2", Site),
+                   Transect = sub("^(T)( *)", "\\2", Transect)),
+            by = c("Site", "Transect", "Location"))
+      
+
 
 #install.packages("Matrix", type = "source")
 #install.packages("lme4", type = "source")
@@ -103,14 +112,17 @@ library(emmeans)
 hist(data$Length_mm)
 hist(log10(data$Length_mm))
 data$Log_Length1 <- log(data$Length_mm + 0.001)
-hist(data$Log_Length)
+hist(data$Log_Length1)
 data$Sqrt_Length <- sqrt(data$Length_mm)
 hist(data$Sqrt_Length)
 data$Inv_Length <- 1 / data$Length_mm
 hist(data$Inv_Length)
 wilcox.test (data$Length_mm)
-qqnorm((data$Sqrt_Length), main = "Q-Q Plot of Length_mm")
-qqline((data$Sqrt_Length), col = "red")
+qqnorm(log10(data$Length_mm), main = "Q-Q Plot of Length_mm")
+data$Log_Length<- log10(data$Avg)
+hist((data$Log_Length))
+qqnorm((data$Log_Length), main = "Q-Q Plot of Length_mm")
+qqline(data$Log_Length, col = "red")
 
 data%>%tail() %>%  # Selects the last 6 rows of the dataframe
   arrange(Length_mm) 
@@ -227,3 +239,23 @@ model_size <- brm(
 )
 
 summary(model_size)
+
+install.packages("ggplot2")
+library(ggplot2)
+
+
+cor(data$Length_mm, data$weight, method = "pearson")
+cor<- data%>%
+  select(weight, Length_mm,Avg, Site, Transect, Location)%>%
+  distinct(Site, Transect, Location,weight, Length_mm, Avg)
+
+
+# Create a scatter plot to visualize the correlation
+ggplot( cor, aes(Avg, weight)) +
+  geom_point() +                      # Plot points
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +  # Add a linear regression line
+  labs(title = "Scatter Plot with Linear Fit",
+       x = "Avg length",
+       y = "weight") 
+lm.sample<- lm(weight~Avg, data)
+summary(lm.sample)
