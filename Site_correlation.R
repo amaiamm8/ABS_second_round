@@ -2,12 +2,19 @@ library(dplyr)
 library(readxl)
 
 
+#Loading the data
 site_data<- read.csv("raw/site_data_Amaia.csv")[,-1]
-secondround_data <- site_data %>%
-  filter(Site %in% c(7, 8 , 10, 12 , 26, 34))
+#filtering the data to my sites
+  secondround_data <- site_data %>%
+    filter(Site %in% c(7, 8 , 10, 12 , 26, 34))
 diam_data<- read_excel("raw/Updated hyphal length.xlsx")
+diam_data <- diam_data %>%
+  filter(Length_mm != 0)#0 measurements all taken from Mosaic!
 
 ph_data<- read.csv("outputs/pH_output.csv")
+
+biomass<- read_excel("raw/Labbook.xlsx", "Indiv weights")[,-4]
+biomass$Tube_ID<- as.character(biomass$Tube_ID)
 
 Ortho_P<- read.csv("outputs/Ortho_P.csv")
 Ortho_P <- Ortho_P %>%
@@ -17,65 +24,21 @@ Ortho_P <- Ortho_P %>%
   )%>%
   select(Site, Transect, Location, Ortho_blanked, Ortho_P_mg_kg)
 
-site_data<- read.csv("raw/site_data_Amaia.csv")[,-1] #ignoring the first column
-biomass<- read_excel("raw/Labbook.xlsx", "Indiv weights")[,-4]
-  biomass$Tube_ID<- as.character(biomass$Tube_ID)
 
   #just to add site names to tubeID
-generic<- read_excel("raw/Labbook.xlsx") 
-generic<- generic %>%
-  distinct(Site, Transect, Location,.keep_all= TRUE) %>%
-  select(Site, Transect, Location, Tube_ID)
-biomass <- biomass%>%
-  full_join(generic, by= "Tube_ID")
+  generic<- read_excel("raw/Labbook.xlsx") 
+  generic<- generic %>%
+    distinct(Site, Transect, Location,.keep_all= TRUE) %>%
+    select(Site, Transect, Location, Tube_ID)
+  biomass <- biomass%>%
+    full_join(generic, by= "Tube_ID")
 
-#filtering all the site data to my sites
-secondround_data <- site_data %>%
-  filter(Site %in% c(7, 8 , 10, 12 , 26, 34))
-
-#diameter data but removing the 0 lengths (estimated by mosaic)
-diam_data<- read_excel("raw/Updated hyphal length.xlsx")
-diam_data <- diam_data %>%
-  filter(Length_mm != 0)
-
-
-#summarising diameter data
-#Amaia's idea
-
-diam_summary <- diam_data %>%
-  mutate(Site = sub("^(S)( *)", "\\2", Site))%>%
-  mutate(Transect = sub("^(T)( *)", "\\2", Transect))%>%
-  group_by(Site, Transect) %>%
-  summarize(
-    diamMin_Value = mean(Min_Value, na.rm = TRUE),
-    diamMax_Value = mean(Max_Value, na.rm = TRUE),
-    diamAvg_Value = mean(Avg, na.rm = TRUE),
-    .groups = "drop" )
-
-#ensuring right formats
-secondround_data$Site <- as.factor(secondround_data$Site)
-secondround_data$Transect <- as.factor(secondround_data$Transect)
-diam_summary$Site <- as.factor(diam_summary$Site)
-diam_summary$Transect <- as.factor(diam_summary$Transect)
-diam_site$Fire.Severity <- as.factor(diam_site$Fire.Severity)
-
-# Perform full joins on all three datasets
-diam_site <- diam_summary %>%
-  full_join(secondround_data, by = c("Site", "Transect"))
-
-diamint<- lm(diamMax_Value~ Fire.Severity, diam_site)
-diamfreq<- lm(diamMax_Value~ Fire.Interval*Fire.Severity, diam_site)
-diamVeg <- lm(diamMax_Value~ Nitrogen, diam_site)
-
-
-car::Anova(diamVeg)   #[instead of anova function given by WUR]
-#post hoc LSD test to
 
 ################
 #Sol script
 
   #calculate Coefficient of variation
-  #"data" contains ALL data (biomass, diameter, ph, site data)
+  #"data" contains ALL data (biomass, diameter, ph, site data and Ortho P)
 data<-diam_data%>%
   group_by(Site,Transect,Location)%>%
   #calculate Coefficient of Variation (CV= sd/mean)
@@ -99,34 +62,42 @@ data<-diam_data%>%
             by = c("Site", "Transect", "Location"))
       
 
-
+#Analysing the data
 #install.packages("Matrix", type = "source")
 #install.packages("lme4", type = "source")
-library(Matrix)
-library(lme4)
-library(car)
-library(emmeans)
+#install.packages("performance")
+  library(Matrix)
+  library(lme4)
+  library(car)
+  library(emmeans)
+  library(performance)
+  library(emmeans)
+  
 
 #Check the distribution of the response variable, you want this to be normalish
 #trying different transformations
 hist(data$Length_mm)
-hist(log10(data$Length_mm))
-data$Log_Length1 <- log(data$Length_mm + 0.001)
-hist(data$Log_Length1)
-data$Sqrt_Length <- sqrt(data$Length_mm)
-hist(data$Sqrt_Length)
-data$Inv_Length <- 1 / data$Length_mm
-hist(data$Inv_Length)
-wilcox.test (data$Length_mm)
-qqnorm(log10(data$Length_mm), main = "Q-Q Plot of Length_mm")
+
 data$Log_Length<- log10(data$Avg)
 hist((data$Log_Length))
 qqnorm((data$Log_Length), main = "Q-Q Plot of Length_mm")
 qqline(data$Log_Length, col = "red")
 
+data$Log_Length1 <- log(data$Length_mm + 0.001)
+hist(data$Log_Length1)
+
+data$Sqrt_Length <- sqrt(data$Length_mm)
+hist(data$Sqrt_Length)
+
+data$Inv_Length <- 1 / data$Length_mm
+hist(data$Inv_Length)
+
+wilcox.test (data$Length_mm)
+
+
+
 data%>%tail() %>%  # Selects the last 6 rows of the dataframe
   arrange(Length_mm) 
-
 
 
 data<-data%>%mutate(Log_Length=log10(Length_mm+.001/2))#adding lowest value above 0 divided by 2 (can talk about why
@@ -137,11 +108,12 @@ model_1<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Bray.P+ (1|Sit
                            data=data)
 
 summary(model_1)
+
 Anova_1<-round(Anova(model_1,test='F'), 2) 
 Anova_1
 plot(model_1)
 qqPlot(resid(model_1))
-library(performance)
+
     #(1|Site/Transect) means nesting the transect within the site
 # ^the model above gives: boundary (singular) fit: see help('isSingular')- deleting Transect OR Site removes error
 summary(model_1)
@@ -150,9 +122,7 @@ Anova_1<-round(Anova(model_1,test='F'), 2)
 Anova_1 #only Fire.Severity significant (0.05) (in Transect)not in Site
 plot(model_1)
 qqPlot(resid(model_1))
-install.packages("performance")
-library(performance)
-library(emmeans)
+
 r2(model_1)
 Log_length<-as.data.frame(emmeans(model_1, ~Fire.Severity))
 Log_length
@@ -168,8 +138,7 @@ Anova_2<-round(Anova(model_2,test='F'), 2)
 Anova_2
 plot(model_2)
 qqPlot(resid(model_2))
-install.packages("performance")
-library(performance)
+
 r2(model_2)
 Log_length<-as.data.frame(emmeans(model_2, ~Fire.Severity))
 Log_length
@@ -259,3 +228,17 @@ ggplot( cor, aes(Avg, weight)) +
        y = "weight") 
 lm.sample<- lm(weight~Avg, data)
 summary(lm.sample)
+
+#Amaia's idea
+# Perform full joins on all three datasets
+diam_site <- diam_summary %>%
+  full_join(secondround_data, by = c("Site", "Transect"))
+
+diamint<- lm(diamMax_Value~ Fire.Severity, diam_site)
+diamfreq<- lm(diamMax_Value~ Fire.Interval*Fire.Severity, diam_site)
+diamVeg <- lm(diamMax_Value~ Nitrogen, diam_site)
+
+
+car::Anova(diamVeg)   #[instead of anova function given by WUR]
+#post hoc LSD test to
+
