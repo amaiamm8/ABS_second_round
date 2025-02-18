@@ -27,11 +27,42 @@ formuladata<- full_join(formuladata, biomass, by= "Tube_ID")
 #Formula with known dry weight of bags (6.64 g with SE of +- 0.045):
 # (harvest_wt- undamaged_bag_wt)/ (undamaged_bag_wt)  * hyphal biomass collected
 
+#this just makes it easier for me, your way works too, but then I dont worry about () as much
+undamaged_bag_wt<-6.64*2
+
 formuladata <- formuladata %>%
   distinct(Site, Transect, Location, .keep_all = TRUE)%>%
-  select(Site, Transect, Location,Tube_ID, harvest_w, dry_w, hyphal_weight)%>%
-  mutate(corrected_weight= (harvest_w- 6.64*2)/ (6.64*2)  * hyphal_weight)
+  select(Site, Transect, Location,Tube_ID, harvest_w, dry_w, hyphal_weight, Notes.x)%>% #keep the notes col to check which bags were damaged
+  mutate(bag_damage= (undamaged_bag_wt-dry_w)/ (undamaged_bag_wt), #use dry weight not harvest_w
+         correction= bag_damage +1  ,
+         corrected_weight= correction* hyphal_weight)
 
+
+# Sols stupid math that were were trying to avoid, but now I think we have to
+
+initial_bag_w<-15.1257*2#this is calculated from average bag weight of undeployed bag fresh_weight
+
+#here i calc what the harvest_w should have been if bags were undamaged, but I calculate an average per transect
+#this accounts for variations in moisture content and assumes that all bags in the same transect have similar moisture contents
+undamaged_bag_w<-formuladata%>%
+  # Calculate undamaged bag averages
+  bag_avg_undamaged <- bag_myc %>%
+  #remove missing or damaged bags # you need to adapt this to your own data
+  filter(!str_detect(Notes.x, 'extreme|major') | str_detect(Missing, 'y')) %>%
+  #remove samples with only one bag,locations over 20g because it seems like the weight where the bags arent damaged
+  filter(Res_total_bag > 20) %>%
+  group_by(Site, Transect) %>%
+  summarise(mean_undam_resin_w = mean(harvest_w, na.rm = TRUE))
+
+
+#here I am calculating the amount of biomass of myc from each location accounting for variation in soil moisture from each site
+  corrected_myc<-left_join(undamaged_bag_w,formuladata)%>%
+  #(initial bag weight saturated * amount Resin collected per Location)/ avg weight of resins per location at each transect
+  mutate(resin_mass_est = (initial_bag_w * harvest_w) / mean_undam_resin_w,
+         hyph_w_per_bead= (hyphal_weight / resin_mass_est),
+         hyph_w_est_yield= myc_2nd_w_per_bead*initial_bag_w)
+  
+  
 
 write_xlsx(formuladata, "raw/biomass.xlsx")
 
