@@ -6,6 +6,11 @@ library(writexl)
 library(openxlsx)
 rawdat<- read_excel("raw/Labbook.xlsx")
 rawdat$Bag_w<- as.numeric(rawdat$Bag_w)
+dates<- read_excel("raw/Site.Info.2nd.Round.xlsx")
+dates<- dates%>%
+  select("Site", "2nd_Bag_Install")%>%
+  mutate(Site = sub("^ABS0*", "", Site))%>%
+  rename(Second_incubation='2nd_Bag_Install')
 
 biomass<- read_excel("raw/Labbook.xlsx", "Indiv weights")[,-4]
 biomass<- biomass%>%
@@ -32,7 +37,8 @@ undamaged_bag_wt<-6.64*2
 
 formuladata <- formuladata %>%
   distinct(Site, Transect, Location, .keep_all = TRUE)%>%
-  select(Site, Transect, Location,Tube_ID, harvest_w, dry_w, hyphal_weight, Notes.x)%>% #keep the notes col to check which bags were damaged
+  rename(Harvest_date= 'Harvest date')%>%
+  select(Harvest_date,Site, Transect, Location,Tube_ID, harvest_w, dry_w, hyphal_weight, Notes.x)%>% #keep the notes col to check which bags were damaged
   mutate(bag_damage= (undamaged_bag_wt-dry_w)/ (undamaged_bag_wt), #use dry weight not harvest_w
          correction= bag_damage +1  ,
          corrected_weight= correction* hyphal_weight)
@@ -45,25 +51,28 @@ initial_bag_w<-15.1257*2#this is calculated from average bag weight of undeploye
 #here i calc what the harvest_w should have been if bags were undamaged, but I calculate an average per transect
 #this accounts for variations in moisture content and assumes that all bags in the same transect have similar moisture contents
 undamaged_bag_w<-formuladata%>%
+  filter(!str_detect(Notes.x, "^D-*") | is.na(Notes.x)) %>%  # Keep rows with missing notes or no 
   #remove missing or damaged bags # you need to adapt this to your own data
   #remove samples with only one bag,locations over 20g because it seems like the weight where the bags arent damaged
   #Check this number and see if you agree!
-  filter(harvest_w > 20) %>%
+  filter(harvest_w > 20)%>%
   group_by(Site, Transect) %>%
   summarise(mean_undam_resin_w = mean(harvest_w, na.rm = TRUE))
-
-
+  
 #here I am calculating the amount of biomass of myc from each location accounting for variation in soil moisture from each site
-  corrected_myc<-left_join(undamaged_bag_w,formuladata)%>%
+corrected_myc<-left_join(undamaged_bag_w,formuladata)%>%
   #(initial bag weight saturated * amount Resin collected per Location)/ avg weight of resins per location at each transect
   mutate(resin_mass_est = (initial_bag_w * harvest_w) / mean_undam_resin_w, # this is the estimate of what the bag would weigh if it had the same intial water content as when we deployed the bag
          #calc ratio of hyphae per gram of resin for each location
          hyph_w_per_bead= (hyphal_weight / resin_mass_est),
          #multiply estimated amount of hyph per bead by undamaged bag weight
-         hyph_w_est_yield= hyph_w_per_bead*initial_bag_w)
+         hyph_w_est_yield= hyph_w_per_bead*initial_bag_w)%>%
+  mutate(Site = sub("^S", "", Site))
   
 # Log transformations and biomass calculations
-  Bag_Site <- left_join(corrected_myc, ) %>%
+
+Bag_Site <-left_join(corrected_myc, dates, relationship="many-to-many")%>%
+    mutate(Days_Installed= as.numeric(Harvest_date- Second_incubation)) %>%
     mutate(
       log10_hyph_w_est_yield = log10(hyph_w_est_yield),
       Biomass_day = hyph_w_est_yield / Days_Installed,
@@ -71,14 +80,33 @@ undamaged_bag_w<-formuladata%>%
       biomass_g_ha_day = Biomass_day * (1e+06 / 15),  # Convert to g/ha/day see lines below
     )
   #g/hectare:
-  #10,000 m^2 ×0.1 m= 1,000 m^3 
+  #10,000m^2 ×0.1m= 1,000m^3 
   #1,000m^3 x (x mg /15cm^3) x (1g/1000mg) x 1000kg/ton x 1000g/kg= g/ha
   #(1e+06/15)
   
 
 write_xlsx(formuladata, "raw/biomass.xlsx")
 
+#PCA
+library(vegan)  # loads the 'vegan' library
 
+# specify object and columns with site coordinates, after converting to data.frame
+ggplot(as.data.frame(scrs.ind), aes(x=PC1, y=PC2)) + 
+  # specify scatterplot geom and characteristics for points
+  geom_point(colour='grey', shape=16, size=2) + 
+  # set axis limits (using trial and error)
+  xlim(c(-2, 2)) + ylim(c(-2, 2)) + 
+  # customise axis labels using eigenvalue contributions (round to whole numbers)
+  xlab(paste('PC1 (', round(scrs.pct[1], 0), '%)', sep='')) + 
+  ylab(paste('PC2 (', round(scrs.pct[2], 0), '%)', sep='')) + 
+  # add label layer for variable coordinates (in new data.frame)
+  geom_text(data=as.data.frame(scrs.var), 
+            mapping=aes(x=PC1, y=PC2, label=rownames(scrs.var)), 
+            colour='blue', size=5) + 
+  # change theme and save as object in workspace
+  theme_bw() -> p
+
+# plot result
 
 
 
@@ -115,30 +143,6 @@ plot(model_glm$residuals)
 summary(model_size)
 plot(model_size$residuals)
 r2(model_glm)
-
-
-#TO DO THE CALCULATIONS PER HALF TRANSECTS
-#group half transects
-formuladata <- formuladata %>%
-  mutate(HalfT = case_when(
-    as.numeric(sub("L", "", Location)) < 20 ~ "A",  # Less than L20
-    as.numeric(sub("L", "", Location)) > 30 ~ "B",  # Greater than L30
-  ))%>%
-  mutate(Name= paste0(Site, Transect, HalfT))
-
-
-newdat <- formuladata %>%
-  group_by(Site, Transect, Location) %>%  # Group by the 'Name' column
-  mutate(
-    harvest_w = sum(harvest_w, na.rm = TRUE),  # Sum of harvest_w for each Name
-    dry_w = sum(dry_w, na.rm = TRUE)           # Sum of dry_w for each Name
-  ) %>%
-  ungroup()  # Remove grouping
-newdat <- newdat %>%
-  distinct(Site, Transect, Location, harvest_w, dry_w, .keep_all = TRUE)%>%
-  select(Site, Transect, Location, harvest_w, dry_w, Tube_ID)
-
-
 
 #Graphs
 ggplot (formuladata , aes(x= Site , y= hyphal_weight )) +
