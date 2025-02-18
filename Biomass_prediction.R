@@ -50,7 +50,7 @@ undamaged_bag_w<-formuladata%>%
   #remove missing or damaged bags # you need to adapt this to your own data
   filter(!str_detect(Notes.x, 'extreme|major') | str_detect(Missing, 'y')) %>%
   #remove samples with only one bag,locations over 20g because it seems like the weight where the bags arent damaged
-  filter(Res_total_bag > 20) %>%
+  filter(harvest_w > 20) %>%
   group_by(Site, Transect) %>%
   summarise(mean_undam_resin_w = mean(harvest_w, na.rm = TRUE))
 
