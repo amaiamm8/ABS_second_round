@@ -45,11 +45,9 @@ initial_bag_w<-15.1257*2#this is calculated from average bag weight of undeploye
 #here i calc what the harvest_w should have been if bags were undamaged, but I calculate an average per transect
 #this accounts for variations in moisture content and assumes that all bags in the same transect have similar moisture contents
 undamaged_bag_w<-formuladata%>%
-  # Calculate undamaged bag averages
-  bag_avg_undamaged <- bag_myc %>%
   #remove missing or damaged bags # you need to adapt this to your own data
-  filter(!str_detect(Notes.x, 'extreme|major') | str_detect(Missing, 'y')) %>%
   #remove samples with only one bag,locations over 20g because it seems like the weight where the bags arent damaged
+  #Check this number and see if you agree!
   filter(harvest_w > 20) %>%
   group_by(Site, Transect) %>%
   summarise(mean_undam_resin_w = mean(harvest_w, na.rm = TRUE))
@@ -58,10 +56,24 @@ undamaged_bag_w<-formuladata%>%
 #here I am calculating the amount of biomass of myc from each location accounting for variation in soil moisture from each site
   corrected_myc<-left_join(undamaged_bag_w,formuladata)%>%
   #(initial bag weight saturated * amount Resin collected per Location)/ avg weight of resins per location at each transect
-  mutate(resin_mass_est = (initial_bag_w * harvest_w) / mean_undam_resin_w,
+  mutate(resin_mass_est = (initial_bag_w * harvest_w) / mean_undam_resin_w, # this is the estimate of what the bag would weigh if it had the same intial water content as when we deployed the bag
+         #calc ratio of hyphae per gram of resin for each location
          hyph_w_per_bead= (hyphal_weight / resin_mass_est),
-         hyph_w_est_yield= myc_2nd_w_per_bead*initial_bag_w)
+         #multiply estimated amount of hyph per bead by undamaged bag weight
+         hyph_w_est_yield= hyph_w_per_bead*initial_bag_w)
   
+# Log transformations and biomass calculations
+  Bag_Site <- left_join(corrected_myc, ) %>%
+    mutate(
+      log10_hyph_w_est_yield = log10(hyph_w_est_yield),
+      Biomass_day = hyph_w_est_yield / Days_Installed,
+      log10_biomass_day = log10(Biomass_day),
+      biomass_g_ha_day = Biomass_day * (1e+06 / 15),  # Convert to g/ha/day see lines below
+    )
+  #g/hectare:
+  #10,000 m^2 ×0.1 m= 1,000 m^3 
+  #1,000m^3 x (x mg /15cm^3) x (1g/1000mg) x 1000kg/ton x 1000g/kg= g/ha
+  #(1e+06/15)
   
 
 write_xlsx(formuladata, "raw/biomass.xlsx")
