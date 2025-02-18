@@ -2,6 +2,8 @@ library(readxl)
 library(dplyr)
 library(stringr)
 library(ggplot2)
+library(writexl)
+library(openxlsx)
 rawdat<- read_excel("raw/Labbook.xlsx")
 rawdat$Bag_w<- as.numeric(rawdat$Bag_w)
 
@@ -22,15 +24,19 @@ formuladata <- rawdat %>%
 
 formuladata<- full_join(formuladata, biomass, by= "Tube_ID")
 
-#if notes "D-*" or "no bag retrieved" remove from new dataset 
-formuladata <- formuladata %>%
-  filter(!is.na(harvest_w))%>%
-  filter(is.na(Notes.x) | Notes.x == "" | !str_detect(Notes.x, "^D-"))
-
+#Formula with known dry weight of bags (6.64 g with SE of +- 0.045):
+# (harvest_wt- undamaged_bag_wt)/ (undamaged_bag_wt)  * hyphal biomass collected
 
 formuladata <- formuladata %>%
   distinct(Site, Transect, Location, .keep_all = TRUE)%>%
-  select(Site, Transect, Location,Tube_ID, harvest_w, dry_w, hyphal_weight)
+  select(Site, Transect, Location,Tube_ID, harvest_w, dry_w, hyphal_weight)%>%
+  mutate(corrected_weight= (harvest_w- 6.64*2)/ (6.64*2)  * hyphal_weight)
+
+
+write_xlsx(formuladata, "raw/biomass.xlsx")
+
+
+
 
 
 #add to the new dataset the columns with the total weight of the hyphae
@@ -90,40 +96,11 @@ newdat <- newdat %>%
   select(Site, Transect, Location, harvest_w, dry_w, Tube_ID)
 
 
+
+#Graphs
 ggplot (formuladata , aes(x= Site , y= hyphal_weight )) +
   # note the '+', which indicates that additional instructions are coming
   stat_summary ( geom ='bar', fun=mean , na.rm = TRUE ) +
   # adds the barplot layer , calculating the mean for each group
   stat_summary ( geom ='errorbar', fun.data = mean_se , width =0.25 , na.rm =TRUE)
 
-
-ggplot(formuladata, aes(x = Site)) +
-  # First response variable: hyphal_weight
-  stat_summary(aes(y = hyphal_weight), 
-               geom = 'bar', 
-               fun = mean, 
-               fill = 'blue', 
-               alpha = 0.6,  # Transparency for the first variable
-               position = position_dodge(width = 0.8),  # Side by side positioning
-               na.rm = TRUE) +
-  stat_summary(aes(y = hyphal_weight), 
-               geom = 'errorbar', 
-               fun.data = mean_se, 
-               width = 0.25, 
-               position = position_dodge(width = 0.8), 
-               na.rm = TRUE) +
-  
-  # Second response variable: hyphal_length
-  stat_summary(aes(y = harvest_w), 
-               geom = 'bar', 
-               fun = mean, 
-               fill = 'skyblue', 
-               alpha = 0.6,  # Transparency for the second variable
-               position = position_dodge(width = 0.8), 
-               na.rm = TRUE) +
-  stat_summary(aes(y = harvest_w), 
-               geom = 'errorbar', 
-               fun.data = mean_se, 
-               width = 0.25, 
-               position = position_dodge(width = 0.8), 
-               na.rm = TRUE)
