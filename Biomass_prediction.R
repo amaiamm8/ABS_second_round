@@ -73,7 +73,9 @@ corrected_myc<-left_join(undamaged_bag_w,formuladata)%>%
 
 # Log transformations and biomass calculations
 
-Bag_Site <-left_join(corrected_myc, dates, relationship="many-to-many")%>%
+
+#better to avoid many to many joins, it creates issues later!!!! Always check the rows of your df!
+Bag_Site <-left_join(corrected_myc, dates%>%distinct())%>%
     mutate(Days_Installed= as.numeric(Harvest_date- Second_incubation)) %>%
     mutate(
       log10_hyph_w_est_yield = log10(hyph_w_est_yield),

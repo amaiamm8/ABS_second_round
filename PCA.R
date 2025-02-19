@@ -3,28 +3,35 @@ library(dplyr)
 library(readxl)
 library(tidyverse)
 library(readxl)
+library(ggrepel)
 # Load your data
+#This dataframe is too long! You did some weird joins to make it, maybe I am wrong, but I would be you had at least one to many 'many-to-many' join here
+#you should have I thnk 72 rows at most 
 alldata <- read_excel("raw/alldata.xlsx")
 alldata <- as.data.frame(alldata)
 
 
 
 veg_nute_join <-alldata%>%
+  #use coll names instead of numbers, cols change often and then you get weird stuff
   select(25:35,37:41,51)
 # Filter out rows with NA values in any column of veg_nute_join
 veg_nute_join_clean <- veg_nute_join %>%
   filter(!apply(veg_nute_join, 1, function(x) any(is.na(x))))
+#you need to know what rows you removed from the analysis and why!
+temp<-anti_join(veg_nute_join, veg_nute_join_clean)
 
 # Ensure both datasets have a common key column (e.g., "ID")
 # Here we are assuming that 'ID' is the common key column; replace with your actual column name.
 
+#why are you doing this step?
 alldata_clean <- alldata %>%
   filter(NH4 %in% veg_nute_join_clean$NH4)
 
-
-Veg_Nute.pca <- rda(veg_nute_join_clean~ FESM_Fire.Severity.Category + fire.frequency, data=alldata_clean, scale=TRUE)
-
-
+#You can use categorical values on the right, but not on the left BELOW IS an RDA
+Veg_Nute.rda <- rda(veg_nute_join_clean~ Fire.Severity + Fire.Interval, data=alldata_clean, scale=TRUE)
+#This is the PCA
+Veg_Nute.pca <- rda(veg_nute_join_clean, data=alldata_clean, scale=TRUE)
 
 
 # Plot the PCA
@@ -34,8 +41,58 @@ plot(Veg_Nute.pca)
 summary(Veg_Nute.pca, display = NULL)
 
 
+#extractr the scores from your pca
+scrs <- scores(Veg_Nute.pca, tidy=TRUE)
+scrs_spp <- scrs %>% filter(score=='species')
+scrs_site <- scrs %>% filter(score=='sites')
+scrs_cent <- scrs %>% filter(score=='centroids')
+scrs_biplot <- scrs %>% filter(score=='biplot')
 
-plot(Veg_Nute.pca)
+# eigenvalues are stored in the `CA` element of the result (a list)
+scrs.eig <- Veg_Nute.pca[['CA']]$eig
+# convert these to relative percent
+scrs.pct <- 100 * scrs.eig/sum(scrs.eig)
+
+
+# first plot - site scores along with centroids for each group
+p<-cbind(alldata_clean,scrs_site)%>%
+  ggplot( aes(x=PC1, y=PC2, colour=Fire.Severity, label=Site )) + 
+  geom_point(size=5.5)+ 
+  geom_segment(data=scrs_spp%>% filter(abs(PC1) > 0.1 | abs(PC2) > 0.1),
+               inherit.aes = FALSE,
+               aes(x=0,y=0, xend=PC1, yend=PC2, group=label),
+               arrow = arrow(type = "closed",length=unit(3,'mm')),
+               color= 'black') +
+  geom_text_repel(data=scrs_spp%>% filter(abs(PC1) > 0.1 | abs(PC2) > 0.1),#use this filter to select most important factos
+                  inherit.aes = FALSE,
+                  aes(x=PC1, y=PC2, label=label),
+                  colour='black',size=7, fontface="bold")+ 
+  xlab(paste('PC1 (', round(scrs.pct[1], 0), '%)', sep='')) + 
+  ylab(paste('PC2 (', round(scrs.pct[2], 0), '%)', sep='')) + 
+  theme_minimal()
+
+
+p
+
+
+
+#I dont really understand what everything is below
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # set graphics window up to contain two plots
 par(mfrow=c(1,2))
