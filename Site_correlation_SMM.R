@@ -38,10 +38,10 @@ Ortho_P <- Ortho_P %>%
 
 
 ################
-#Sol script
-
+#Putting all of the data together
+#"data" contains ALL data (biomass, diameter, ph, site data and Ortho P)
+  
   #calculate Coefficient of variation
-  #"data" contains ALL data (biomass, diameter, ph, site data and Ortho P)
 data<-diam_data%>%
   group_by(Site,Transect,Location)%>%
   #calculate Coefficient of Variation (CV= sd/mean)
@@ -64,7 +64,9 @@ data<-diam_data%>%
                    Transect = sub("^(T)( *)", "\\2", Transect)),
             by = c("Site", "Transect", "Location"))
       
+write_xlsx(data, "raw/alldata.xlsx")
 
+  
 #Analysing the data
 #install.packages("Matrix", type = "source")
 #install.packages("lme4", type = "source")
@@ -117,12 +119,10 @@ data%>%tail() %>%  # Selects the last 6 rows of the dataframe
   arrange(Length_mm) 
 
 
-data<-data%>%mutate(Log_Length=log10(Length_mm))#adding lowest value above 0 divided by 2 (can talk about why
-#BUT how did you measure 0 length?- results from Mosaic! but have deleted them now at the top
-#NO NEED TO DO THIS ANYMORE
+data<-data%>%mutate(Log_Length=log10(Length_mm))
 
-#one example of a model you could build using length as a response
-model_1<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Ortho_P_mg_kg+ (1|Site/Transect) , 
+#Log_length responding to fire regime
+model_1<-lmer(Log_Length~ Fire.Interval + Fire.Severity (1|Site/Transect) , 
                            data=data)
 
 summary(model_1)
@@ -130,6 +130,7 @@ summary(model_1)
 Anova_1<-round(Anova(model_1,test='F'), 2) 
 Anova_1
 plot(model_1)
+
 #this is the QQ plot you wan to check!
 qqPlot(resid(model_1))
 
@@ -138,14 +139,8 @@ qqPlot(resid(model_1))
 #This is because they dont explain much variation in the data, which makes sense, you only have 6 sites and they are clustered 
 #and transects really arent that diff from each other
 #This warning can be ignored, the model should reflect the experimental design and it does as is
-summary(model_1)
-
-Anova_1<-round(Anova(model_1,test='F'), 2) 
-Anova_1 #only Fire.Severity significant (0.05) (in Transect)not in Site
 #when we change the model to get signif results it is not fair
 #the results I see here show no significance
-plot(model_1)
-qqPlot(resid(model_1))
 
 r2(model_1)
 Log_length<-as.data.frame(emmeans(model_1, ~Fire.Severity))
@@ -169,74 +164,23 @@ Log_length
 plot(Log_length)
 
 
-
-#Attempting to build a JSDM of some sort
-
-
-# Load necessary packages
-#install.packages("sdm")
-library(sdm)
-library(mgcv)  # For Generalized Additive Models (GAMs)
-library(ggplot2)
-
-
-
-# Fit a Generalized Additive Model (GAM) to predict trait distribution
-# Example: Modeling the distribution of size trait with environmental predictors
-model_size <- gam(Length_mm ~ Fire.Interval + Fire.Severity + Most.Recent.Fire_Year+ Avg_pH + Litter.Cover_20mm_perc + Bray.P, data = data)
-model_size<-lm(Length_mm~ Fire.Interval + Fire.Severity+ + Most.Recent.Fire_Year+ Avg_pH + Litter.Cover_20mm_perc + Bray.P , 
+#model for log length responding to fire regime and nutrients
+model_3<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Ortho_P_mg_kg  +(1|Site/Transect) , 
               data=data)
+summary(model_3)
+Anova_3<-round(Anova(model_3,test='F'), 2) 
+Anova_3
+plot(model_3)
+qqPlot(resid(model_3))
+
+r2(model_3)
+Log_length<-as.data.frame(emmeans(model_2, ~Fire.Severity))
+Log_length
+plot(Log_length)
 
 
-# View the model summary
-summary(model_size)
-plot(model_size$residuals)
-
-
-#ATTEMPTING A PCA
-# Load necessary libraries
-install.packages("brms")
-library(brms)
-library(tidyverse)
-library(vegan)
-
-
-env_data <- data.frame(
-  Fire.Interval = data$Fire.Interval,
-  Fire.Severity = data$Fire.Severity,
-  NO3 = data$NO3,
-  NH4 = data$NH4
-)
-env_data_numeric <- env_data %>% select_if(is.numeric)
-# Assuming env_data is a data frame or matrix of environmental variables (e.g., temperature, precipitation, etc.)
- # Standardizing the environmental data
-env_data_scaled <- scale(env_data_numeric)
-
-# Perform PCA
-pca_result <- prcomp(env_data_scaled, center = TRUE, scale. = TRUE)
-
-# Check PCA summary
-summary(pca_result)
-
-# Extract PCA scores
-pc_scores <- pca_result$x
-# Ensure pc_scores is in a data frame format
-pc_scores_df <- as.data.frame(pc_scores)  # Convert PCA scores to a data frame
-data_for_model <- cbind(pc_scores_df, Length_mm = data$Length_mm)
-
-# Include the response variable (length_mm) in the same data frame
-model_size <- brm(
-  Length_mm ~ PC1 + PC2,  # Use PCA component names as predictors
-  data = data_for_model,        # The data frame with the response and predictors
-  family = gaussian(),          # Gaussian family for continuous response
-  prior = c(set_prior("normal(0, 1)", class = "b")),  # Specify priors for the model coefficients
-  chains = 2,                   # Number of Markov chains
-  iter = 2000                   # Number of iterations per chain
-)
-
-summary(model_size)
-
-install.packages("ggplot2")
+##########
+#something else
 library(ggplot2)
 
 
@@ -247,20 +191,14 @@ cor<- data%>%
 
 
 # Create a scatter plot to visualize the correlation
-ggplot( cor, aes(Avg, weight)) +
+ggplot( data, aes(NH4,Length_mm)) +
   geom_point() +                      # Plot points
   geom_smooth(method = "lm", se = FALSE, color = "blue") +  # Add a linear regression line
   labs(title = "Scatter Plot with Linear Fit",
-       x = "Avg length",
-       y = "weight") 
-lm.sample<- lm(weight~Avg, data)
-summary(lm.sample)
+       x = "x",
+       y = "y") 
 
 #Amaia's idea
-# Perform full joins on all three datasets
-diam_site <- diam_summary %>%
-  full_join(secondround_data, by = c("Site", "Transect"))
-
 diamint<- lm(diamMax_Value~ Fire.Severity, diam_site)
 diamfreq<- lm(diamMax_Value~ Fire.Interval*Fire.Severity, diam_site)
 diamVeg <- lm(diamMax_Value~ Nitrogen, diam_site)

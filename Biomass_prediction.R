@@ -17,6 +17,7 @@ biomass<- biomass%>%
   mutate(Tube_ID= as.character(Tube_ID)) %>%
   rename(hyphal_weight = weight)
 
+
 #new weight adding reps -both for bag_w and dry_w
 formuladata <- rawdat %>%
   group_by(gr = cumsum(Rep == "A")) %>%  # Group every pair of A/B
@@ -87,67 +88,4 @@ Bag_Site <-left_join(corrected_myc, dates, relationship="many-to-many")%>%
   
 
 write_xlsx(Bag_Site, "raw/biomass.xlsx")
-
-
-
-# specify object and columns with site coordinates, after converting to data.frame
-ggplot(as.data.frame(scrs.ind), aes(x=PC1, y=PC2)) + 
-  # specify scatterplot geom and characteristics for points
-  geom_point(colour='grey', shape=16, size=2) + 
-  # set axis limits (using trial and error)
-  xlim(c(-2, 2)) + ylim(c(-2, 2)) + 
-  # customise axis labels using eigenvalue contributions (round to whole numbers)
-  xlab(paste('PC1 (', round(scrs.pct[1], 0), '%)', sep='')) + 
-  ylab(paste('PC2 (', round(scrs.pct[2], 0), '%)', sep='')) + 
-  # add label layer for variable coordinates (in new data.frame)
-  geom_text(data=as.data.frame(scrs.var), 
-            mapping=aes(x=PC1, y=PC2, label=rownames(scrs.var)), 
-            colour='blue', size=5) + 
-  # change theme and save as object in workspace
-  theme_bw() -> p
-
-# plot result
-
-
-
-#add to the new dataset the columns with the total weight of the hyphae
-
-cor(formuladata$hyphal_weight, formuladata$harvest_w, method = "pearson")
-cor(formuladata$hyphal_weight, formuladata$harvest_w, method = "spearman")
-
-single.lm<-lm(hyphal_weight ~  dry_w, formuladata)# building a model
-car::Anova(single.lm) 
-summary(single.lm)
-
-single2.lm<-lm(hyphal_weight ~  harvest_w, formuladata)# building a model
-car::Anova(single2.lm) 
-summary(single2.lm)
-
-compound.lm<-lm(hyphal_weight ~  harvest_w+dry_w, formuladata)# building a model
-car::Anova(compound.lm) 
-summary(compound.lm)
-
-
-library(mgcv)
-model_size <- gam(hyphal_weight ~ harvest_w, data = formuladata)
-# Fit a GLM with a Gaussian distribution (normal distribution)
-model_glm <- glm(hyphal_weight ~ harvest_w,
-                 family = gaussian(link = "identity"), 
-                 data = formuladata)
-
-# Check model summary
-summary(model_glm)
-plot(model_glm$residuals)
-
-# View the model summary
-summary(model_size)
-plot(model_size$residuals)
-r2(model_glm)
-
-#Graphs
-ggplot (formuladata , aes(x= Site , y= hyphal_weight )) +
-  # note the '+', which indicates that additional instructions are coming
-  stat_summary ( geom ='bar', fun=mean , na.rm = TRUE ) +
-  # adds the barplot layer , calculating the mean for each group
-  stat_summary ( geom ='errorbar', fun.data = mean_se , width =0.25 , na.rm =TRUE)
 

@@ -1,6 +1,7 @@
 library(dplyr)
 library(readxl)
-
+library(tidyverse)
+library(readxl)
 
 #Loading the data
 site_data<- read.csv("raw/site_data_Amaia.csv")[,-1]
@@ -65,9 +66,11 @@ data<-diam_data%>%
 #Analysing the data
 #install.packages("Matrix", type = "source")
 #install.packages("lme4", type = "source")
+#install.packages("lmerTest")- gives the pvalue too
 #install.packages("performance")
   library(Matrix)
   library(lme4)
+  library(lmerTest)
   library(car)
   library(emmeans)
   library(performance)
@@ -78,13 +81,8 @@ data<-diam_data%>%
 #trying different transformations
 hist(data$Length_mm)
 
-data$Log_Length<- log10(data$Avg)
-hist((data$Log_Length))
-qqnorm((data$Log_Length), main = "Q-Q Plot of Length_mm")
-qqline(data$Log_Length, col = "red")
 
-data$Log_Length1 <- log(data$Length_mm + 0.001)
-hist(data$Log_Length1)
+hist(log10(data$Length_mm))
 
 data$Sqrt_Length <- sqrt(data$Length_mm)
 hist(data$Sqrt_Length)
@@ -95,20 +93,19 @@ hist(data$Inv_Length)
 wilcox.test (data$Length_mm)
 
 
-
 data%>%tail() %>%  # Selects the last 6 rows of the dataframe
   arrange(Length_mm) 
 
 
-data<-data%>%mutate(Log_Length=log10(Length_mm+.001/2))#adding lowest value above 0 divided by 2 (can talk about why
-#BUT how did you measure 0 length?- results from Mosaic! but have deleted them now at the top
+data<-data%>%
+  mutate(Log_Length=log10(Length_mm))#adding lowest value above 0 divided by 2 (can talk about why
 
 #one example of a model you could build using length as a response
-model_1<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Bray.P+ (1|Site/Transect) , 
+model_1<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Ortho_P_mg_kg+ (1|Site/Transect) , 
                            data=data)
 
 summary(model_1)
-
+plot(model_1)
 Anova_1<-round(Anova(model_1,test='F'), 2) 
 Anova_1
 plot(model_1)
@@ -242,3 +239,30 @@ diamVeg <- lm(diamMax_Value~ Nitrogen, diam_site)
 car::Anova(diamVeg)   #[instead of anova function given by WUR]
 #post hoc LSD test to
 
+library(ggplot2)
+# a scatterplot
+ggplot (data , aes(x=, y=Length_mm)) + geom_point (na.rm= TRUE )+geom_smooth ( method ='lm')
+# a boxplot
+ggplot (data , aes(x=Vegetation.Class, y=Length_mm)) + geom_boxplot ()
+ggplot (data , aes(x=Vegetation.Class, y=Length_mm , colour =fire.frequency )) +
+  geom_boxplot ()
+ggplot (data , aes(x= Site , y= Length_mm )) +
+  # note the '+', which indicates that additional instructions are coming
+  stat_summary ( geom ='bar', fun=mean , na.rm = TRUE ) +
+  # adds the barplot layer , calculating the mean for each group
+  stat_summary ( geom ='errorbar', fun.data = mean_se , width =0.25 , na.rm =TRUE)
+
+ggplot (data , aes(x=NO3 , y=Length_mm , colour =Site)) +
+  geom_point () +
+  geom_smooth ( method ='lm') 
+
+ggplot (data , aes(x=NO3 , y=Length_mm , colour =Site)) +
+  geom_boxplot () +
+  scale_fill_manual ( values =c("7"='blue', "8"='red'))
+
+
+ggplot (data , aes(x= Site , y= weight )) +
+  # note the '+', which indicates that additional instructions are coming
+  stat_summary ( geom ='bar', fun=mean , na.rm = TRUE ) +
+  # adds the barplot layer , calculating the mean for each group
+  stat_summary ( geom ='errorbar', fun.data = mean_se , width =0.25 , na.rm =TRUE)
