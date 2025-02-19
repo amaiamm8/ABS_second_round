@@ -67,8 +67,9 @@ corrected_myc<-left_join(undamaged_bag_w,formuladata)%>%
          hyph_w_per_bead= (hyphal_weight / resin_mass_est),
          #multiply estimated amount of hyph per bead by undamaged bag weight
          hyph_w_est_yield= hyph_w_per_bead*initial_bag_w)%>%
-  mutate(Site = sub("^S", "", Site))
-  
+  mutate(Site = sub("^S", "", Site))%>%
+  mutate(Transect = sub("^T", "", Transect))
+
 # Log transformations and biomass calculations
 
 Bag_Site <-left_join(corrected_myc, dates, relationship="many-to-many")%>%
@@ -85,10 +86,9 @@ Bag_Site <-left_join(corrected_myc, dates, relationship="many-to-many")%>%
   #(1e+06/15)
   
 
-write_xlsx(formuladata, "raw/biomass.xlsx")
+write_xlsx(Bag_Site, "raw/biomass.xlsx")
 
-#PCA
-library(vegan)  # loads the 'vegan' library
+
 
 # specify object and columns with site coordinates, after converting to data.frame
 ggplot(as.data.frame(scrs.ind), aes(x=PC1, y=PC2)) + 
