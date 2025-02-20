@@ -14,15 +14,12 @@ alldata <- as.data.frame(alldata)
 
 veg_nute_join <-alldata%>%
   #use coll names instead of numbers, cols change often and then you get weird stuff
-  select(25:35,37:41,51)
+  select(Tree.Basal.Area_m2:Dead.Tree.Canopy.Cover_perc,NH4:Nitrogen,Ortho_P_mg_kg)
 # Filter out rows with NA values in any column of veg_nute_join
 veg_nute_join_clean <- veg_nute_join %>%
   filter(!apply(veg_nute_join, 1, function(x) any(is.na(x))))
-#you need to know what rows you removed from the analysis and why!
+#you need to know what rows you removed from the analysis and why!- because no total P in these rows
 temp<-anti_join(veg_nute_join, veg_nute_join_clean)
-
-# Ensure both datasets have a common key column (e.g., "ID")
-# Here we are assuming that 'ID' is the common key column; replace with your actual column name.
 
 #why are you doing this step?
 alldata_clean <- alldata %>%
@@ -41,7 +38,7 @@ plot(Veg_Nute.pca)
 summary(Veg_Nute.pca, display = NULL)
 
 
-#extractr the scores from your pca
+#extract the scores from your pca
 scrs <- scores(Veg_Nute.pca, tidy=TRUE)
 scrs_spp <- scrs %>% filter(score=='species')
 scrs_site <- scrs %>% filter(score=='sites')
@@ -66,33 +63,31 @@ p<-cbind(alldata_clean,scrs_site)%>%
   geom_text_repel(data=scrs_spp%>% filter(abs(PC1) > 0.1 | abs(PC2) > 0.1),#use this filter to select most important factos
                   inherit.aes = FALSE,
                   aes(x=PC1, y=PC2, label=label),
-                  colour='black',size=7, fontface="bold")+ 
+                  colour='black',size=3, fontface="bold")+ 
   xlab(paste('PC1 (', round(scrs.pct[1], 0), '%)', sep='')) + 
   ylab(paste('PC2 (', round(scrs.pct[2], 0), '%)', sep='')) + 
   theme_minimal()
 
-
 p
 
+# first plot - site scores along with centroids for each group
+a<-cbind(alldata_clean,scrs_site)%>%
+  ggplot( aes(x=PC1, y=PC2, colour=Fire.Interval, label=Site )) + 
+  geom_point(size=5.5)+ 
+  geom_segment(data=scrs_spp%>% filter(abs(PC1) > 0.1 | abs(PC2) > 0.1),
+               inherit.aes = FALSE,
+               aes(x=0,y=0, xend=PC1, yend=PC2, group=label),
+               arrow = arrow(type = "closed",length=unit(3,'mm')),
+               color= 'black') +
+  geom_text_repel(data=scrs_spp%>% filter(abs(PC1) > 0.1 | abs(PC2) > 0.1),#use this filter to select most important factos
+                  inherit.aes = FALSE,
+                  aes(x=PC1, y=PC2, label=label),
+                  colour='black',size=3, fontface="bold")+ 
+  xlab(paste('PC1 (', round(scrs.pct[1], 0), '%)', sep='')) + 
+  ylab(paste('PC2 (', round(scrs.pct[2], 0), '%)', sep='')) + 
+  theme_minimal()
 
-
-#I dont really understand what everything is below
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+a
 
 # set graphics window up to contain two plots
 par(mfrow=c(1,2))
@@ -127,7 +122,7 @@ scrs.eig <- Veg_Nute.pca[['CA']]$eig
 # convert these to relative percent
 scrs.pct <- 100 * scrs.eig/sum(scrs.eig)
 
-
+#######
 # establish the plot showing site coordinates
 plot(scrs.ind, 
      # set axis limits (using trial and error)
@@ -153,7 +148,7 @@ colnames(as.data.frame(scrs.ind))
 
 
 # specify object and columns with site coordinates, after converting to data.frame
-ggplot(as.data.frame(scrs.ind), aes(x=RDA1, y=RDA2)) + 
+ggplot(as.data.frame(scrs.ind), aes(x=PC1, y=PC2)) + 
   # specify scatterplot geom and characteristics for points
   geom_point(colour='grey', shape=16, size=2) + 
   # set axis limits (using trial and error)
@@ -163,7 +158,7 @@ ggplot(as.data.frame(scrs.ind), aes(x=RDA1, y=RDA2)) +
   ylab(paste('PC2 (', round(scrs.pct[2], 0), '%)', sep='')) + 
   # add label layer for variable coordinates (in new data.frame)
   geom_text(data=as.data.frame(scrs.var), 
-            mapping=aes(x=RDA1, y=RDA2, label=rownames(scrs.var)), 
+            mapping=aes(x=PC1, y=PC2, label=rownames(scrs.var)), 
             colour='blue', size=5) + 
   # change theme and save as object in workspace
   theme_bw() -> p
