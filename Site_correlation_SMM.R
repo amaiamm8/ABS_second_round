@@ -122,7 +122,7 @@ data%>%tail() %>%  # Selects the last 6 rows of the dataframe
 data<-data%>%mutate(Log_Length=log10(Length_mm))
 
 #Log_length responding to fire regime
-model_1<-lmer(Log_Length~ Fire.Interval + Fire.Severity (1|Site/Transect) , 
+model_1<-lmer(Log_Length~ Fire.Interval * Fire.Severity+ (1|Site/Transect) , 
                            data=data)
 
 summary(model_1)
@@ -134,13 +134,47 @@ plot(model_1)
 #this is the QQ plot you wan to check!
 qqPlot(resid(model_1))
 
-    #(1|Site/Transect) means nesting the transect within the site
-# ^the model above gives: boundary (singular) fit: see help('isSingular')- deleting Transect OR Site removes error
-#This is because they dont explain much variation in the data, which makes sense, you only have 6 sites and they are clustered 
-#and transects really arent that diff from each other
-#This warning can be ignored, the model should reflect the experimental design and it does as is
-#when we change the model to get signif results it is not fair
-#the results I see here show no significance
+ggplot(data, aes(x = Fire.Interval, y = Length_mm, fill = Fire.Severity)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Log-Transformed Length by Fire Intensity and Frequency",
+       x = "Fire Intensity",
+       y = "Log Length",
+       fill="Fire Severity") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),plot.title = element_text(size = 9))
+
+# Pairwise comparisons for Fire.Severity
+emmeans_severity <- emmeans(model_1, pairwise ~ Fire.Interval)
+summary(emmeans_severity)
+
+
+library(ggpubr)
+
+# Create the boxplot with p-values
+ggplot(data, aes(x = Fire.Interval, y = Log_Length, fill = Fire.Severity)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Log-Transformed Length by Fire Severity and Frequency",
+       x = "Fire Interval",
+       y = "Log Length",
+       fill = "Fire Severity") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(size = 9)) +
+  stat_compare_means(aes(group = Fire.Severity), label = "p.signif")  +# Add p-values (show significance)
+  stat_compare_means(aes(group = Fire.Interval), label = "p.signif", label.x = 1.5) 
+
+ggplot(data, aes(x = Fire.Severity, y = Log_Length, fill = Fire.Interval)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Log-Transformed Length by Fire Severity and Frequency",
+       x = "Fire Severity",
+       y = "Log Length",
+       fill = "Fire Interval") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(size = 9)) +
+  stat_compare_means(aes(group = Fire.Interval), label = "p.signif") + # Add p-values (show significance)
+  stat_compare_means(aes(group = Fire.Severity), label = "p.signif", label.x = 1.5) 
+
 
 r2(model_1)
 Log_length<-as.data.frame(emmeans(model_1, ~Fire.Severity))
