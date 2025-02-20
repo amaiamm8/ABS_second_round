@@ -6,8 +6,8 @@ library(readxl)
 #Loading the data
 site_data<- read.csv("raw/site_data_Amaia.csv")[,-1]
 #filtering the data to my sites
-  secondround_data <- site_data %>%
-    filter(Site %in% c(7, 8 , 10, 12 , 26, 34))
+secondround_data <- site_data %>%
+  filter(Site %in% c(7, 8 , 10, 12 , 26, 34))
 diam_data<- read_excel("raw/Updated hyphal length.xlsx")
 #THIS NEEDS AN EXPLINATION...I dont know how you measured 0, and maybe this is the best solution, but it makes me wonder about the rest of your
 #measurements... and others will wonder why
@@ -22,31 +22,30 @@ biomass$Tube_ID<- as.character(biomass$Tube_ID)
 Ortho_P<- read.csv("outputs/Ortho_P.csv")
 Ortho_P <- Ortho_P %>%
   mutate(Site = sub("^(S\\d+).*", "\\1", Names),
-    Transect = sub(".*(T\\d+).*", "\\1", Names),  
-    Location = sub(".*(L\\d+)$", "\\1", Names)  
+         Transect = sub(".*(T\\d+).*", "\\1", Names),  
+         Location = sub(".*(L\\d+)$", "\\1", Names)  
   )%>%
   select(Site, Transect, Location, Ortho_blanked, Ortho_P_mg_kg)
 
 
-  #just to add site names to tubeID
-  generic<- read_excel("raw/Labbook.xlsx") 
-  generic<- generic %>%
-    distinct(Site, Transect, Location,.keep_all= TRUE) %>%
-    select(Site, Transect, Location, Tube_ID)
-  biomass <- biomass%>%
-    full_join(generic, by= "Tube_ID")
+#just to add site names to tubeID
+generic<- read_excel("raw/Labbook.xlsx") 
+generic<- generic %>%
+  distinct(Site, Transect, Location,.keep_all= TRUE) %>%
+  select(Site, Transect, Location, Tube_ID)
+biomass <- biomass%>%
+  full_join(generic, by= "Tube_ID")
 
 
 ################
 #Putting all of the data together
 #"data" contains ALL data (biomass, diameter, ph, site data and Ortho P)
-  
-  #calculate Coefficient of variation
+
+#calculate Coefficient of variation
 data<-diam_data%>%
   group_by(Site,Transect,Location)%>%
   #calculate Coefficient of Variation (CV= sd/mean)
-  summarise(CV_Length = sd(Length_mm, na.rm = TRUE) / mean(Length_mm, na.rm = TRUE))%>%
-  left_join(diam_data)%>%
+  mutate(CV_Length = sd(Length_mm, na.rm = TRUE) / mean(Length_mm, na.rm = TRUE))%>%
   mutate(Site = sub("^(S)( *)", "\\2", Site),
          Transect = sub("^(T)( *)", "\\2", Transect))%>%
   left_join(secondround_data%>%
@@ -54,30 +53,30 @@ data<-diam_data%>%
                      Transect=as.character(Transect)))%>%
   left_join(ph_data%>%  
               mutate(Site = sub("^(S)( *)", "\\2", Site),
-                    Transect = sub("^(T)( *)", "\\2", Transect))
-            )%>%
+                     Transect = sub("^(T)( *)", "\\2", Transect))
+  )%>%
   left_join(biomass%>%  
               mutate(Site = sub("^(S)( *)", "\\2", Site),
-                    Transect = sub("^(T)( *)", "\\2", Transect)))%>%
+                     Transect = sub("^(T)( *)", "\\2", Transect)))%>%
   left_join(Ortho_P%>%  
-            mutate(Site = sub("^(S)( *)", "\\2", Site),
-                   Transect = sub("^(T)( *)", "\\2", Transect)),
+              mutate(Site = sub("^(S)( *)", "\\2", Site),
+                     Transect = sub("^(T)( *)", "\\2", Transect)),
             by = c("Site", "Transect", "Location"))
-      
+
 write_xlsx(data, "raw/alldata.xlsx")
 
-  
+
 #Analysing the data
 #install.packages("Matrix", type = "source")
 #install.packages("lme4", type = "source")
 #install.packages("performance")
-  library(Matrix)
-  library(lme4)
-  library(car)
-  library(emmeans)
-  library(performance)
-  library(emmeans)
-  
+library(Matrix)
+library(lme4)
+library(car)
+library(emmeans)
+library(performance)
+
+
 
 #Check the distribution of the response variable, you want this to be normalish
 #trying different transformations
@@ -121,9 +120,34 @@ data%>%tail() %>%  # Selects the last 6 rows of the dataframe
 
 data<-data%>%mutate(Log_Length=log10(Length_mm))
 
+#CV_length responding to fire regime
+modelCV<-lmer(CV_Length~ Fire.Interval * Fire.Severity+ (1|Site/Transect) , 
+              data=data)
+
+summary(modelCV)
+
+AnovaCV<-round(Anova(modelCV,test='F'), 2) 
+AnovaCV
+plot(modelCV)
+
+#this is the QQ plot you wan to check!
+qqPlot(resid(modelCV))
+#CV_length responding to fire regime
+modelCV1<-lmer(CV_Length~ Fire.Interval + Fire.Severity+ (1|Site/Transect) , 
+              data=data)
+
+summary(modelCV1)
+
+AnovaCV1<-round(Anova(modelCV1,test='F'), 2) 
+AnovaCV1
+plot(modelCV1)
+
+#this is the QQ plot you wan to check!
+qqPlot(resid(modelCV1))
+
 #Log_length responding to fire regime
 model_1<-lmer(Log_Length~ Fire.Interval * Fire.Severity+ (1|Site/Transect) , 
-                           data=data)
+              data=data)
 
 summary(model_1)
 
@@ -134,6 +158,7 @@ plot(model_1)
 #this is the QQ plot you wan to check!
 qqPlot(resid(model_1))
 
+#boxplot of length per intensity per severity
 ggplot(data, aes(x = Fire.Interval, y = Length_mm, fill = Fire.Severity)) +
   geom_boxplot() +
   labs(title = "Boxplot of Log-Transformed Length by Fire Intensity and Frequency",
@@ -150,7 +175,7 @@ summary(emmeans_severity)
 
 library(ggpubr)
 
-# Create the boxplot with p-values
+# Create the boxplot with p-values (in log length)
 ggplot(data, aes(x = Fire.Interval, y = Log_Length, fill = Fire.Severity)) +
   geom_boxplot() +
   labs(title = "Boxplot of Log-Transformed Length by Fire Severity and Frequency",
@@ -163,6 +188,7 @@ ggplot(data, aes(x = Fire.Interval, y = Log_Length, fill = Fire.Severity)) +
   stat_compare_means(aes(group = Fire.Severity), label = "p.signif")  +# Add p-values (show significance)
   stat_compare_means(aes(group = Fire.Interval), label = "p.signif", label.x = 1.5) 
 
+#opposite boxplot
 ggplot(data, aes(x = Fire.Severity, y = Log_Length, fill = Fire.Interval)) +
   geom_boxplot() +
   labs(title = "Boxplot of Log-Transformed Length by Fire Severity and Frequency",
@@ -183,7 +209,7 @@ plot(Log_length)
 
 
 #one example of a model you could build using the variation in length as a response
-model_2<-lmer(CV_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Bray.P+ (1|Site/Transect) , 
+model_2<-lmer(CV_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Ortho_P_mg_kg + Tree.Basal.Area_m2  + Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc + Mean.Max.Shrub.Height_cm+ All.Tree.Canopy.Cover_perc+(1|Site/Transect) , 
               data=data)
 
 summary(model_2)
@@ -199,7 +225,7 @@ plot(Log_length)
 
 
 #model for log length responding to fire regime and nutrients
-model_3<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Ortho_P_mg_kg  +(1|Site/Transect) , 
+model_3<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Ortho_P_mg_kg + Tree.Basal.Area_m2  + Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc + Mean.Max.Shrub.Height_cm+ All.Tree.Canopy.Cover_perc+(1|Site/Transect) , 
               data=data)
 summary(model_3)
 Anova_3<-round(Anova(model_3,test='F'), 2) 
@@ -240,4 +266,3 @@ diamVeg <- lm(diamMax_Value~ Nitrogen, diam_site)
 
 car::Anova(diamVeg)   #[instead of anova function given by WUR]
 #post hoc LSD test to
-
