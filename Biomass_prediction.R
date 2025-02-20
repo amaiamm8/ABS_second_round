@@ -62,7 +62,7 @@ undamaged_bag_w<-formuladata%>%
   summarise(mean_undam_resin_w = mean(harvest_w, na.rm = TRUE))
   
 #here I am calculating the amount of biomass of myc from each location accounting for variation in soil moisture from each site
-corrected_myc<-cross_join(undamaged_bag_w,formuladata)%>%
+corrected_myc<-left_join(undamaged_bag_w,formuladata)%>%
   #(initial bag weight saturated * amount Resin collected per Location)/ avg weight of resins per location at each transect
   mutate(resin_mass_est = (initial_bag_w * harvest_w) / mean_undam_resin_w, # this is the estimate of what the bag would weigh if it had the same intial water content as when we deployed the bag
          #calc ratio of hyphae per gram of resin for each location
@@ -88,7 +88,7 @@ Bag_Site <-left_join(corrected_myc, dates%>%distinct())%>%
   #10,000m^2 ×0.1m= 1,000m^3 
   #1,000m^3 x (x mg /15cm^3) x (1g/1000mg) x 1000kg/ton x 1000g/kg= g/ha
   #(1e+06/15)
-biomass<- read_excel("raw/biomass.xlsx")
+
 site_data<- read.csv("raw/site_data_Amaia.csv")[,-1]
 #filtering the data to my sites
 site_data <- site_data %>%
