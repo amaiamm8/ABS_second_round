@@ -10,12 +10,13 @@ dates<- read_excel("raw/Site.Info.2nd.Round.xlsx")
 dates<- dates%>%
   select("Site", "2nd_Bag_Install")%>%
   mutate(Site = sub("^ABS0*", "", Site))%>%
-  rename(Second_incubation='2nd_Bag_Install')
+  dplyr::rename(Second_incubation='2nd_Bag_Install')
+
 
 biomass<- read_excel("raw/Labbook.xlsx", "Indiv weights")[,-4]
 biomass<- biomass%>%
   mutate(Tube_ID= as.character(Tube_ID)) %>%
-  rename(hyphal_weight = weight)
+  dplyr::rename(hyphal_weight = weight)
 
 
 #new weight adding reps -both for bag_w and dry_w
@@ -38,7 +39,7 @@ undamaged_bag_wt<-6.64*2
 
 formuladata <- formuladata %>%
   distinct(Site, Transect, Location, .keep_all = TRUE)%>%
-  rename(Harvest_date= 'Harvest date')%>%
+  dplyr::rename(Harvest_date= 'Harvest date')%>%
   select(Harvest_date,Site, Transect, Location,Tube_ID, harvest_w, dry_w, hyphal_weight, Notes.x)%>% #keep the notes col to check which bags were damaged
   mutate(bag_damage= (undamaged_bag_wt-dry_w)/ (undamaged_bag_wt), #use dry weight not harvest_w
          correction= bag_damage +1  ,
@@ -61,7 +62,7 @@ undamaged_bag_w<-formuladata%>%
   summarise(mean_undam_resin_w = mean(harvest_w, na.rm = TRUE))
   
 #here I am calculating the amount of biomass of myc from each location accounting for variation in soil moisture from each site
-corrected_myc<-left_join(undamaged_bag_w,formuladata)%>%
+corrected_myc<-cross_join(undamaged_bag_w,formuladata)%>%
   #(initial bag weight saturated * amount Resin collected per Location)/ avg weight of resins per location at each transect
   mutate(resin_mass_est = (initial_bag_w * harvest_w) / mean_undam_resin_w, # this is the estimate of what the bag would weigh if it had the same intial water content as when we deployed the bag
          #calc ratio of hyphae per gram of resin for each location
@@ -87,7 +88,14 @@ Bag_Site <-left_join(corrected_myc, dates%>%distinct())%>%
   #10,000m^2 ×0.1m= 1,000m^3 
   #1,000m^3 x (x mg /15cm^3) x (1g/1000mg) x 1000kg/ton x 1000g/kg= g/ha
   #(1e+06/15)
-  
+biomass<- read_excel("raw/biomass.xlsx")
+site_data<- read.csv("raw/site_data_Amaia.csv")[,-1]
+#filtering the data to my sites
+site_data <- site_data %>%
+  filter(Site %in% c(7, 8 , 10, 12 , 26, 34))%>%
+  mutate(Site=as.character(Site),
+         Transect=as.character(Transect))
+Bag_Site<- left_join(Bag_Site, site_data)
 
 write_xlsx(Bag_Site, "raw/biomass.xlsx")
 
