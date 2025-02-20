@@ -61,6 +61,7 @@ Blanks<-All_ortho_P%>%
 Blanks <- Blanks %>%
   mutate(Names = c("Blank 1", "Blank 2")[1:n()])  # Adjust to fit the number of rows in Blanks
 
+
 #extracting nutrient weight
 nutri_weight <- Amaia_Bags%>%
   filter(!is.na(Nutri))  %>%
@@ -81,6 +82,12 @@ Final_Ortho_numbers<-Ortho_P_Amaia%>%
          Ortho_blanked= Dil_result- Blank_avg,
          Ortho_blanked = ifelse(Ortho_blanked < 0, 0.0288/2, Ortho_blanked),
          Ortho_P_mg_kg= Ortho_blanked *(7.5/Nutri)) #7.5mL used for 1 g of resin
+
+Final_Ortho_numbers <- Final_Ortho_numbers %>%
+  mutate(Site = sub("S(\\d+)T.*", "\\1", Names),
+         Transect = sub(".*T(\\d+)L.*", "\\1", Names),  
+         Location = sub(".*L(\\d+)$", "\\1", Names))
+
 
 #you need to change the resin_nute_w to the weight you actually took in you bag df
 #you dont have any dilutions, but good practice to include and to make sure everything lines up
