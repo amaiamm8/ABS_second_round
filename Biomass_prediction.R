@@ -64,23 +64,19 @@ undamaged_bag_w<-formuladata%>%
 #here I am calculating the amount of biomass of myc from each location accounting for variation in soil moisture from each site
 corrected_myc<-left_join(undamaged_bag_w,formuladata)%>%
   #(initial bag weight saturated * amount Resin collected per Location)/ avg weight of resins per location at each transect
-  mutate(resin_mass_est = (initial_bag_w * harvest_w) / mean_undam_resin_w, # this is the estimate of what the bag would weigh if it had the same intial water content as when we deployed the bag
-         #calc ratio of hyphae per gram of resin for each location
-         hyph_w_per_bead= (hyphal_weight / resin_mass_est),
-         #multiply estimated amount of hyph per bead by undamaged bag weight
-         hyph_w_est_yield= hyph_w_per_bead*initial_bag_w)%>%
+  mutate(myc_w_per_bead= (hyphal_weight / harvest_w), #hyph per resin harvested. Before I used the total weight of the bags, but we should be using only the mass that we extracted the resins from
+       mass_loss_H2O= (initial_bag_w/mean_undam_resin_w), # this accounts for the loss in water weight from when we installed to harvested based on average undamaged bags
+       hypo_bag= initial_bag_w/mass_loss_H2O, # this is what a hypothetical bag should have weighed
+       myc_yield_est= hypo_bag*myc_w_per_bead)%>% # here we multiply the amount of hyphae harvested per a resin by the amount of resins in a hypothetical bag
   mutate(Site = sub("^S", "", Site))%>%
   mutate(Transect = sub("^T", "", Transect))
-
-# Log transformations and biomass calculations
-
 
 #better to avoid many to many joins, it creates issues later!!!! Always check the rows of your df!
 Bag_Site <-left_join(corrected_myc, dates%>%distinct())%>%
     mutate(Days_Installed= as.numeric(Harvest_date- Second_incubation)) %>%
     mutate(
-      log10_hyph_w_est_yield = log10(hyph_w_est_yield),
-      Biomass_day = hyph_w_est_yield / Days_Installed,
+      log10_myc_yield_est = log10(myc_yield_est),
+      Biomass_day = myc_yield_est / Days_Installed,
       log10_biomass_day = log10(Biomass_day),
       biomass_g_ha_day = Biomass_day * (1e+06 / 15),  # Convert to g/ha/day see lines below
     )
