@@ -59,6 +59,15 @@ Anova_1<-round(Anova(GR_model,test='F'), 2)
 Anova_1
 
 r2(GR_model)
+#simple model with interaction
+GR_int_model<- lmer(biomass_g_ha_day~Fire.Severity*Fire.Interval + (1|Site/Transect), combined_data)
+summary(GR_int_model)
+
+
+Anova_int<-round(Anova(GR_int_model,test='F'), 2) 
+Anova_int
+
+r2(GR_int_model)
 #second model hyphal growth rate influenced by fire regime veg data, mycorrhizal hosts and nutrient contents
 GR_model_full<- lmer(biomass_g_ha_day~Fire.Severity+Fire.Interval +NO3+ NH4+Ortho_P_mg_kg+Tree.Basal.Area_m2+ Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq+(1|Site/Transect), combined_data)
 summary(GR_model_full)
@@ -78,3 +87,4 @@ Anova_3
 plot(biomass_model_full)
 
 r2(biomass_model_full)
+
