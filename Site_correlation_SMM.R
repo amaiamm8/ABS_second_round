@@ -128,7 +128,7 @@ data%>%tail() %>%  # Selects the last 6 rows of the dataframe
 data<-data%>%mutate(Log_Length=log10(Length_mm))
 
 #CV_length responding to fire regime
-modelCV<-lmer(CV_Length~ Fire.Interval + Fire.Severity+ (1|Site/Transect/Location) , 
+modelCV<-lmer(CV_Length~ Fire.Interval+ (1|Site/Transect/Location) , 
               data=data)
 
 summary(modelCV)
@@ -159,7 +159,7 @@ plot_m3
 
 #Log of the CV
 data<-data%>%mutate(Log_CVLength=log10(CV_Length))
-modelCV1<-lmer(Log_CVLength~ Fire.Interval + Fire.Severity+ (1|Site/Transect/Location) , 
+modelCV1<-lmer(Log_CVLength~ Fire.Interval + (1|Site/Transect/Location) , 
                data=data)
 summary(modelCV1)
 AnovaCV1<-round(Anova(modelCV1,test='F'), 2) 
@@ -170,7 +170,7 @@ CV1_Length
 plot(CV1_Length)
 qqPlot(resid(modelCV1))
 
-plot_m3<-ggplot(CV1_Length, aes(x = Fire.Interval, y = Log_CVLength) )+
+plot_CV1<-ggplot(CV1_Length, aes(x = Fire.Interval, y = Log_CVLength) )+
   geom_point(data=data, aes(x=Fire.Interval, y=Log_CVLength), size=1)+
   labs(x = "Fire Interval", y = "Coefficient of Variation of Hyphal Width") +
   annotate("text", x = 1.9, y = Inf, label = paste0("Interval (p) = ", AnovaCV1["Fire.Interval", "Pr(>F)"]),
@@ -182,11 +182,11 @@ plot_m3<-ggplot(CV1_Length, aes(x = Fire.Interval, y = Log_CVLength) )+
         axis.title.y = element_text(size = 8),
         axis.line = element_line(linewidth = 0.5),
         legend.position = 'none')
-plot_m3
+plot_CV1
 
 
 #Log_length responding to fire regime
-model0<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ (1|Site/Transect/Location) , 
+model0<-lmer(Log_Length~ Fire.Interval + (1|Site/Transect/Location/Rep) , 
               data=data)
 
 summary(model0)
@@ -214,15 +214,13 @@ plot_log <- ggplot(data, aes(x = Fire.Interval, y = Log_Length)) +
         axis.line = element_line(linewidth = 0.5),
         legend.position = 'none')
 
-
 plot_log
 
 
-
-
-library(ggpubr)
-
+#####################
+#ommmit (not enough replicates to do this graph)
 # Create the boxplot with p-values (in log length)
+library(ggpubr)
 ggplot(data, aes(x = Fire.Interval, y = Log_Length, fill = Fire.Severity)) +
   geom_boxplot() +
   labs(title = "Boxplot of Log-Transformed Width by Fire Severity and Frequency",
@@ -234,32 +232,12 @@ ggplot(data, aes(x = Fire.Interval, y = Log_Length, fill = Fire.Severity)) +
         plot.title = element_text(size = 9)) +
   stat_compare_means(aes(group = Fire.Severity), label = "p.signif")  +# Add p-values (show significance)
   stat_compare_means(aes(group = Fire.Interval), label = "p.signif", label.x = 1.5) 
-
-#opposite boxplot
-ggplot(data, aes(x = Fire.Severity, y = Log_Length, fill = Fire.Interval)) +
-  geom_boxplot() +
-  labs(title = "Boxplot of Log-Transformed Width by Fire Severity and Frequency",
-       x = "Fire Severity",
-       y = "Log Width",
-       fill = "Fire Interval") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.title = element_text(size = 9)) +
-  stat_compare_means(aes(group = Fire.Interval), label = "p.signif") + # Add p-values (show significance)
-  stat_compare_means(aes(group = Fire.Severity), label = "p.signif", label.x = 1.5) 
-
-
-r2(model_1)
-Log_length<-as.data.frame(emmeans(model_1, ~Fire.Severity))
-Log_length
-plot(Log_length)
-
+#####################
 
 
 #one example of a model you could build using the variation in length as a response
-model_2<-lmer(CV_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Ortho_P_mg_kg  + Tree.Basal.Area_m2  + Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc +  All.Tree.Canopy.Cover_perc+perc_myco_host_freq+ (1|Site/Transect/Location/Rep) , 
+model_2<-lmer(Log_CVLength~ Fire.Interval + mean_ammonia +mean_nitrate+ Ortho_P_mg_kg  + Tree.Basal.Area_m2  + Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc +perc_myco_host_freq+ (1|Site/Transect/Location) , 
               data=data)
-
 summary(model_2)
 
 Anova_2<-round(Anova(model_2,test='F'), 2) 
@@ -268,13 +246,13 @@ plot(model_2)
 qqPlot(resid(model_2))
 
 r2(model_2)
-Log_length<-as.data.frame(emmeans(model_2, ~Fire.Severity))
+Log_length<-as.data.frame(emmeans(model_2, ~Fire.Interval))
 Log_length
 plot(Log_length)
 
 
 #model for log length responding to fire regime and nutrients
-model_3<-lmer(Log_Length~ Fire.Interval + Fire.Severity+ NO3+NH4+ Ortho_P_mg_kg + Tree.Basal.Area_m2  + Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+ All.Tree.Canopy.Cover_perc+ perc_myco_host_freq+(1|Site/Transect) , 
+model_3<-lmer(Log_Length~ Fire.Interval + mean_ammonia +mean_nitrate+ Ortho_P_mg_kg + Tree.Basal.Area_m2  + Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+ perc_myco_host_freq+(1|Site/Transect/Location/Rep) , 
               data=data)
 summary(model_3)
 Anova_3<-round(Anova(model_3,test='F'), 2) 
@@ -283,21 +261,81 @@ plot(model_3)
 qqPlot(resid(model_3))
 
 r2(model_3)
+table(data$Rep)
+table(data$Site)
 
-car::Anova(single.lm)   #[instead of anova function given by WUR]
-#post hoc LSD test to 
-
-emm<- emmeans(model_1, specs = "Name")
+emm<- emmeans(model_3, specs = "")
 pairs(emm, specs="Log_Length", adjust="none")
 emmeans(model_1, specs = "Log_Length", adjust = "none")
 multcomp::cld(emm)
+ranef(model_3) 
+predict(model_3, re.form = NULL)  # Includes both fixed & random effects
+
+
+
 
 ##########
 #something else
+library(emmeans)
+weight_length<- lm(Log_Length~weight+ (1/Site/Transect/Location), data)
+model<-as.data.frame(emmeans(weight_length,~weight))
+model
+summary(model)
+Anova(weight_length, test = "F")
+plot(model)
+qqPlot(resid(model0))
 library(ggplot2)
 
+ggplot(data, aes(x = weight, y = predicted)) +
+  geom_point(alpha = 0.5, color = "blue") +  # Adjusted predictions
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Trend line for model estimates
+  labs(x = "Weight", y = "Predicted Log Length", title = "Adjusted Correlation (Mixed Model)") +
+  theme_classic()
 
+plot<- ggplot(data, aes(x = weight, y = Log_Length)) +
+  geom_boxplot() +  # Boxplot for raw data per Fire Interval
+  geom_point(data = model, aes(x = weight, y = emmean), color = "red", size = 3) +  # Model estimates
+  geom_errorbar(data = model, aes(x = weight, y = emmean, ymin = lower.CL, ymax = upper.CL), 
+                color = "red", width = 0.2) +  # Confidence intervals
+  labs(x = "Fire Interval", y = "Coefficient of Variation of Hyphal Width") +
+  annotate("text", x = 1.9, y = Inf, label = paste0("Interval (p) = ", Anova0["Fire.Interval", "Pr(>F)"]),
+           hjust = 2.5, vjust = 1.5, size = 3) +
+  theme_classic() +
+  theme(axis.text.x = element_text(hjust = 1, size = 8),
+        axis.text.y = element_text(size = 8),
+        axis.title.x = element_text(size = 8),
+        axis.title.y = element_text(size = 8),
+        axis.line = element_line(linewidth = 0.5),
+        legend.position = 'none')
+
+plot
 cor(data$Length_mm, data$weight, method = "pearson")
+cor.test(data$Length_mm, data$weight, method = "pearson")
+
+
+ggplot(data, aes(x = weight, y = Log_Length)) +
+  geom_point(alpha = 0.5, color = "blue") +  # Raw data points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Overall trend line
+  labs(x = "Weight", y = "Log Length", title = "Correlation between Weight and Log Length") +
+  theme_classic()
+data$predicted <- predict(weight_length, re.form = NA)  # Predictions without random effects
+data$residuals <- resid(weight_length)  # Residuals from the model
+ggplot(data, aes(x = weight, y = predicted)) +
+  geom_point(alpha = 0.5, color = "blue") +  # Adjusted predictions
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Trend line for model estimates
+  labs(x = "Weight", y = "Predicted Log Length", title = "Adjusted Correlation (Mixed Model)") +
+  theme_classic()
+
+# Scatter plot with regression line
+ggplot(data, aes(x = Log_Length, y = weight)) +
+  geom_point(alpha = 0.6, color = "blue") +  # Scatter plot points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Linear regression line
+  labs(x = "Length (mm)", y = "Weight", title = "Correlation between Length and Weight") +
+  theme_classic()
+
+
+
+
 cor<- data%>%
   select(weight, Length_mm,Avg, Site, Transect, Location)%>%
   distinct(Site, Transect, Location,weight, Length_mm, Avg)

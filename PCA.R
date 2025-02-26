@@ -50,23 +50,27 @@ scrs.eig <- Veg_Nute.pca[['CA']]$eig
 # convert these to relative percent
 scrs.pct <- 100 * scrs.eig/sum(scrs.eig)
 
+p <- ggplot(alldata_clean, aes(x = PC1, y = PC2, label = Site)) + 
+  geom_point(aes(color = Fire.Interval, shape = Fire.Severity), size = 3, stroke = 4) +
+  theme_minimal()
 
 # first plot - site scores along with centroids for each group
 p<-cbind(alldata_clean,scrs_site)%>%
-  ggplot( aes(x=PC1, y=PC2, colour=Fire.Severity, label=Site )) + 
-  geom_point(size=5.5)+ 
-  geom_segment(data=scrs_spp%>% filter(abs(PC1) > 0.1 | abs(PC2) > 0.1),
+  ggplot( aes(x=PC1, y=PC2, label=Site )) + 
+  geom_point(aes( colour= Fire.Interval,shape= Fire.Severity), size=3, stroke = 4)+
+  geom_segment(data=scrs_spp%>% filter(abs(PC1) > 1 | abs(PC2) > 1),
                inherit.aes = FALSE,
                aes(x=0,y=0, xend=PC1, yend=PC2, group=label),
                arrow = arrow(type = "closed",length=unit(3,'mm')),
                color= 'black') +
-  geom_text_repel(data=scrs_spp%>% filter(abs(PC1) > 0.1 | abs(PC2) > 0.1),#use this filter to select most important factos
+  geom_text(data=scrs_spp%>% filter(abs(PC1) > 1 | abs(PC2) > 1),#use this filter to select most important factos
                   inherit.aes = FALSE,
                   aes(x=PC1, y=PC2, label=label),
                   colour='black',size=3, fontface="bold")+ 
   xlab(paste('PC1 (', round(scrs.pct[1], 0), '%)', sep='')) + 
   ylab(paste('PC2 (', round(scrs.pct[2], 0), '%)', sep='')) + 
-  theme_minimal()
+  theme_minimal() + labs(color = "Fire Interval", shape = "Fire Severity")
+
 
 p
 
