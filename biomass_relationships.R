@@ -226,3 +226,14 @@ plot_m3<-ggplot(nutri, aes(x = mean_ammonia, y = biomass_g_ha_day) )+
         axis.line = element_line(linewidth = 0.5),
         legend.position = 'none')
 plot_m3
+
+library(ggplot2)
+
+# Example: Scatter plot of biomass vs. ammonia
+ggplot(combined_data, aes(x = Length_mm, y = biomass_g_ha_day)) +
+  geom_point(alpha = 0.6, color = "blue") +  # Scatter points
+  labs(x = "Mean Ammonia", y = "Biomass (g/ha/day)", 
+       title = "Scatter Plot of Biomass vs. Ammonia") +
+  theme_classic() 
+
+
