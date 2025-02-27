@@ -37,12 +37,11 @@ Ortho_P <- Ortho_P %>%
   distinct()
 
 pH_data<- read_csv("outputs/pH_output.csv", col_select= c("Site","Transect", "Location", "Avg_pH"))
-
 pH_data<- pH_data%>%
-  group_by(Site, Transect)%>%
-  summarise(mean_pH = mean(Avg_pH, na.rm = TRUE))%>%
+  mutate(Site=as.factor(Site))%>%
   mutate(Site = sub("^(S)( *)", "\\2", Site),
-         Transect = sub("^(T)( *)", "\\2", Transect))
+         Transect = sub("^(T)( *)", "\\2", Transect),
+         Location = sub("^(L)( *)", "\\2", Location))
 
 myco_data <- read.csv("raw/Myco_host_abundance.csv")
 myco_data <- myco_data %>%
@@ -60,7 +59,7 @@ nutri_sol<- nutri_sol%>%
 combined_data<-left_join(biomass,Ortho_P,by=c("Site","Transect","Location"))
 combined_data<-full_join(combined_data, myco_data)
 combined_data<- left_join(combined_data, nutri_sol)
-combined_data<- left_join(combined_data, pH_data)
+combined_data<- left_join(combined_data, pH_data,by=c("Site","Transect","Location"))
 combined_data$Fire.Interval<- as.factor(combined_data$Fire.Interval)
 combined_data$Fire.Severity<- as.factor(combined_data$Fire.Severity)
 
@@ -78,7 +77,7 @@ r2(GR_model)
 
 
 #growth rate related to nutrients
-GR_nutri<- lmer(biomass_g_ha_day~ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+mean_pH+(1|Site/Transect), combined_data)
+GR_nutri<- lmer(biomass_g_ha_day~ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+Avg_pH+(1|Site/Transect), combined_data)
 summary(GR_nutri)
 Anova_nutri<-round(Anova(GR_nutri,test='F'), 2) 
 Anova_nutri
@@ -100,13 +99,14 @@ plot(GR_veg)
 qqPlot(resid(GR_veg))
 
 #second model hyphal growth rate influenced by fire regime veg data, mycorrhizal hosts and nutrient contents
-GR_model_full<- lmer(biomass_g_ha_day~ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+Tree.Basal.Area_m2+ Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq+(1|Site/Transect), combined_data)
+GR_model_full<- lmer(biomass_g_ha_day~ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+ Avg_pH+Tree.Basal.Area_m2+ Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq+(1|Site/Transect), combined_data)
 summary(GR_model_full)
 
 Anova_2<-round(Anova(GR_model_full,test='F'), 2) 
 Anova_2
 plot(GR_model_full)
 qqPlot(resid(GR_model_full))
+
 r2(GR_model_full)
 
 

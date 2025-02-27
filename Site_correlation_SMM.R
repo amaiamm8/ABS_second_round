@@ -86,7 +86,6 @@ data<-diam_data%>%
 data$Fire.Interval<- as.factor(data$Fire.Interval)
 data$Fire.Severity<- as.factor(data$Fire.Severity)
 write_xlsx(data, "raw/alldata.xlsx")
-data$Total.P
 
 #Analysing the data
 #install.packages("Matrix", type = "source")
@@ -317,10 +316,10 @@ cor(data$Length_mm, data$biomass_g_ha_day, method = "pearson")
 cor.test(data$Length_mm, data$biomass_g_ha_day, method = "pearson")
 
 
-ggplot(data, aes(x = weight, y = Log_Length)) +
+ggplot(data, aes(x = biomass_g_ha_day, y = Length_mm)) +
   geom_point(alpha = 0.5, color = "blue") +  # Raw data points
   geom_smooth(method = "lm", color = "red", se = TRUE) +  # Overall trend line
-  labs(x = "Weight", y = "Log Length", title = "Correlation between Weight and Log Length") +
+  labs(x = "Biomass production (g/ha/day)", y = "Width (mm)", title = "Correlation between Biomass production and Hyphal width") +
   theme_classic()
 data$predicted <- predict(weight_length, re.form = NA)  # Predictions without random effects
 data$residuals <- resid(weight_length)  # Residuals from the model
