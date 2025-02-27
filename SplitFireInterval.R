@@ -43,19 +43,21 @@ Anova_low
 plot(veg_low)
 
 #models for biomass~nutri and veg
-full_high<- lmer(biomass_g_ha_day~ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+Avg_pH+  Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq+(1|Site/Transect),
+#crash when I use Tree basal area (from here onwards...)
+full_high<- lmer(biomass_g_ha_day~ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+Avg_pH+  Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq+(1|Site),
                  high_freq)
 summary(full_high)
 Anova_high<-round(Anova(full_high,test='F'), 2) 
 Anova_high
 plot(full_high)
 
-full_low<- lmer(biomass_g_ha_day~ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+Avg_pH+  Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq+(1|Site/Transect),
-                 high_freq)
+full_low<- lmer(biomass_g_ha_day~ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+Avg_pH+Herb.Cover_0.50cm_perc+Shrub.Cover_50.200cm_perc+perc_myco_host_freq+(1|Site),
+                low_freq)
 summary(full_low)
 Anova_low<-round(Anova(full_low,test='F'), 2) 
 Anova_low
 plot(full_low)
+vif(full_low)
 
 #HYPHAL WIDTH
 #models for width~nutri
