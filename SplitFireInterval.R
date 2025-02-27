@@ -116,8 +116,8 @@ plot(CVn_low)
 CVv_high<-lmer(Log_CVLength~ Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+ perc_myco_host_freq+(1|Site/Transect/Location) , 
               data=high_freq)
 summary(CVv_high)
-Anova_CVvH<-round(Anova(CVv_high,test='F'), 2) 
-Anova_CVvH
+Anova_CVvh<-round(Anova(CVv_high,test='F'), 2) 
+Anova_CVvh
 plot(CVv_high)
 qqPlot(resid(CVv_high))
 
