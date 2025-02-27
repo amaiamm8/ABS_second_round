@@ -95,3 +95,43 @@ Bag_Site<- left_join(Bag_Site, site_data)
 
 write_xlsx(Bag_Site, "raw/biomass.xlsx")
 
+<<<<<<< HEAD
+=======
+library(mgcv)
+model_size <- gam(hyphal_weight ~ harvest_w, data = formuladata)
+# Fit a GLM with a Gaussian distribution (normal distribution)
+model_glm <- glm(hyphal_weight ~ harvest_w,
+                 family = gaussian(link = "identity"), 
+                 data = formuladata)
+
+# Check model summary
+summary(model_glm)
+plot(model_glm$residuals)
+
+# View the model summary
+summary(model_size)
+plot(model_size$residuals)
+r2(model_glm)
+
+
+#TO DO THE CALCULATIONS PER HALF TRANSECTS
+#group half transects
+formuladata <- formuladata %>%
+  mutate(HalfT = case_when(
+    as.numeric(sub("L", "", Location)) < 20 ~ "A",  # Less than L20
+    as.numeric(sub("L", "", Location)) > 30 ~ "B",  # Greater than L30
+  ))%>%
+  mutate(Name= paste0(Site, Transect, HalfT))
+
+
+newdat <- formuladata %>%
+  group_by(Site, Transect, Location) %>%  # Group by the 'Name' column
+  mutate(
+    harvest_w = sum(harvest_w, na.rm = TRUE),  # Sum of harvest_w for each Name
+    dry_w = sum(dry_w, na.rm = TRUE)           # Sum of dry_w for each Name
+  ) %>%
+  ungroup()  # Remove grouping
+newdat <- newdat %>%
+  distinct(Site, Transect, Location, harvest_w, dry_w, .keep_all = TRUE)%>%
+  select(Site, Transect, Location, harvest_w, dry_w, Tube_ID)
+>>>>>>> 7334ebe (mini attempts)
