@@ -10,7 +10,7 @@ hist(data$biomass_g_ha_day)
 hist(data$Log_biomass_g_ha_day)
 
 #models for biomass~nutri
-ml<-lmer(Log_biomass_g_ha_day~ Fire.Interval+ mean_ammonia+ mean_nitrate +Ortho_P_mg_kg+ Avg_pH + (1|Site/Transect) , 
+ml<-lmer(Log_biomass_g_ha_day~  mean_ammonia+ mean_nitrate +Ortho_P_mg_kg+ Avg_pH + (1|Site/Transect) , 
               data=data)
 summary(ml)
 Anova<-round(Anova(ml,test='F'), 2) 
@@ -20,7 +20,7 @@ qqPlot(resid(ml))  #  QQ plot looks strange non-transformed- looks ok now!
 
 
 #models for biomass~veg
-veg<-lmer(biomass_g_ha_day~Fire.Interval+ Tree.Basal.Area_m2+ Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq + (1|Site/Transect) , 
+veg<-lmer(biomass_g_ha_day~ Tree.Basal.Area_m2+ Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq + (1|Site/Transect) , 
                data=data)
 summary(veg)
 Anova<-round(Anova(veg,test='F'), 2) 
@@ -39,10 +39,47 @@ Anova<-round(Anova(full,test='F'), 2)
 Anova
 plot(full)
 
+#just Interval
+ml<-lmer(Log_biomass_g_ha_day~  Fire.Interval + (1|Site/Transect) , 
+         data=data)
+summary(ml)
+Anova<-round(Anova(ml,test='F'), 2) 
+Anova
+plot(ml)
+qqPlot(resid(ml))  #  QQ plot looks strange non-transformed- looks ok now!
+
+
+
+
+#Ortho_Phos
+m1<-lmer(log10(Ortho_P_mg_kg)~Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=data)
+summary(m1)
+Anova(m1,test='F')
+plot(m1)
+qqPlot(resid(m1))
+
+#N avail dont work, I think it is because my data doesnt fit well...another reason we need the full data here
+#Ammonia
+m3<-lmer(log10(mean_ammonia) ~   Fire.Interval + Fire.Severity + (1|Site/Transect) , data=data)
+summary(m3)
+Anova(m3,test='F')
+plot(m3)
+qqPlot(resid(m3))
+
+
+
+#Nitrate
+m2<-lmer(log10(mean_nitrate)~  Fire.Severity+ Fire.Interval +(1|Site/Transect) , data=data)
+summary(m2)
+Anova(m2,test='F')
+plot(m2)
+qqPlot(resid(m2))
+
+
 
 #HYPHAL WIDTH
 datalength<- read_excel("raw/alldataforlength.xlsx")
-datalength<-data%>%mutate(Log_Length= log10(Length_mm),
+datalength<-datalength%>%mutate(Log_Length= log10(Length_mm),
                           Log_CVLength=log10(CV_Length))
 #models for width~nutri
 wn<-lmer(Log_Length~Fire.Interval+ mean_ammonia +mean_nitrate+ Ortho_P_mg_kg +Avg_pH+(1|Site/Transect/Location/Rep) , 
@@ -68,7 +105,7 @@ qqPlot(resid(wv))
 
 
 #to check if this was an issue but no- also tried scaling and nothing
-vif(lm(Log_Length~Tree.Basal.Area_m2 + Shrub.Cover_50.200cm_perc,data))
+vif(wv)
 
 #models for CV width~nutri
 CVn<-lmer(Log_CVLength~ Fire.Interval+ mean_ammonia+ mean_nitrate +Ortho_P_mg_kg+ Avg_pH + (1|Site/Transect/Location) , 
@@ -77,6 +114,8 @@ summary(CVn)
 Anova_CVnh<-round(Anova(CVn,test='F'), 2) 
 Anova_CVnh
 plot(CVn)
+qqPlot(resid(CVn))
+
 
 #models for CV width~veg
 CVf<-lmer(Log_CVLength~ Fire.Interval+ mean_ammonia+ mean_nitrate +Ortho_P_mg_kg+ Avg_pH +Tree.Basal.Area_m2+ Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+ perc_myco_host_freq+(1|Site/Transect/Location) , 
