@@ -1,6 +1,7 @@
 library(dplyr)
 library(readxl)
 library(writexl)
+library(readr)
 
 #Loading the data
 #site data from Gordon
@@ -28,7 +29,6 @@ Ortho_P <- Ortho_P %>%
   )%>%
   select(Site, Transect, Location, Ortho_blanked, Ortho_P_mg_kg)
 
-Site = sub("^(S)( *)", "\\2", Site)
 #mycorrhizal hosts (from Sol)
 myco_data <- read.csv("raw/Myco_host_abundance.csv")
 myco_data <- myco_data %>%
@@ -85,7 +85,7 @@ data<-diam_data%>%
 
 data$Fire.Interval<- as.factor(data$Fire.Interval)
 data$Fire.Severity<- as.factor(data$Fire.Severity)
-write_xlsx(data, "raw/alldata.xlsx")
+write_xlsx(data, "raw/alldataforlength.xlsx")
 
 #Analysing the data
 #install.packages("Matrix", type = "source")

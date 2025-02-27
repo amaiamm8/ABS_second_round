@@ -62,7 +62,7 @@ combined_data<- left_join(combined_data, nutri_sol)
 combined_data<- left_join(combined_data, pH_data,by=c("Site","Transect","Location"))
 combined_data$Fire.Interval<- as.factor(combined_data$Fire.Interval)
 combined_data$Fire.Severity<- as.factor(combined_data$Fire.Severity)
-
+write_xlsx(combined_data, "raw/alldataforbiomass.xlsx")
 # Remove leading and trailing spaces
 
 # Add this if duplicates are expected
