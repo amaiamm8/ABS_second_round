@@ -277,38 +277,4 @@ predict(model_3, re.form = NULL)  # Includes both fixed & random effects
 
 
 
-##########
-#something else
-library(emmeans)
-weight_length<- lm(Log_Length~weight+ (1/Site/Transect/Location), data)
-model<-as.data.frame(emmeans(weight_length,~weight))
-model
-summary(model)
-Anova(weight_length, test = "F")
-plot(model)
-qqPlot(resid(model0))
-library(ggplot2)
 
-ggplot(data, aes(x = weight, y = predicted)) +
-  geom_point(alpha = 0.5, color = "blue") +  # Adjusted predictions
-  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Trend line for model estimates
-  labs(x = "Weight", y = "Predicted Log Length", title = "Adjusted Correlation (Mixed Model)") +
-  theme_classic()
-
-plot<- ggplot(data, aes(x = weight, y = Log_Length)) +
-  geom_boxplot() +  # Boxplot for raw data per Fire Interval
-  geom_point(data = model, aes(x = weight, y = emmean), color = "red", size = 3) +  # Model estimates
-  geom_errorbar(data = model, aes(x = weight, y = emmean, ymin = lower.CL, ymax = upper.CL), 
-                color = "red", width = 0.2) +  # Confidence intervals
-  labs(x = "Fire Interval", y = "Coefficient of Variation of Hyphal Width") +
-  annotate("text", x = 1.9, y = Inf, label = paste0("Interval (p) = ", Anova0["Fire.Interval", "Pr(>F)"]),
-           hjust = 2.5, vjust = 1.5, size = 3) +
-  theme_classic() +
-  theme(axis.text.x = element_text(hjust = 1, size = 8),
-        axis.text.y = element_text(size = 8),
-        axis.title.x = element_text(size = 8),
-        axis.title.y = element_text(size = 8),
-        axis.line = element_line(linewidth = 0.5),
-        legend.position = 'none')
-
-plot

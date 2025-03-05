@@ -3,12 +3,14 @@ data <- read_excel("raw/alldataforlength.xlsx")
 data_cor<- data%>%
   group_by(Site,Transect)%>%
   mutate(avgLength_mm=mean(Length_mm))%>%
+  mutate(avgbiomass=mean(biomass_g_ha_day))%>%
+  select(Site, Transect,avgLength_mm,avgbiomass)%>%
+  distinct()%>%
   ungroup()
-cor(data_cor$avgLength_mm, data_cor$biomass_g_ha_day, method = "pearson")
-cor.test(data_cor$avgLength_mm, data_cor$biomass_g_ha_day, method = "pearson")
+cor(data_cor$avgLength_mm, data_cor$avgbiomass, method = "pearson")
+cor.test(data_cor$avgLength_mm, data_cor$avgbiomass, method = "pearson")
 
-
-ggplot(data_cor, aes(x = biomass_g_ha_day, y = avgLength_mm)) +
+ggplot(data_cor, aes(x = avgbiomass, y = avgLength_mm)) +
   geom_point(alpha = 0.5, color = "blue") +  # Raw data points
   geom_smooth(method = "lm", color = "red", se = TRUE) +  # Overall trend line
   labs(x = "Biomass production (g/ha/day)", y = "Width (mm)", title = "Correlation between Biomass production and Hyphal width") +

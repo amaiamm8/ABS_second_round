@@ -135,4 +135,49 @@ Anova_CVvh
 plot(CVv)
 qqPlot(resid(CVv))
 
+#biomass~nutrients/site
+site_7<- data %>%
+  filter(Site %in% 7)
+site_8<- data %>%
+  filter(Site %in% 8)
+site_10<- data %>%
+  filter(Site %in% 10)
+site_12<- data %>%
+  filter(Site %in% 12)
+site_26<- data %>%
+  filter(Site %in% 26)
+site_34<- data %>%
+  filter(Site %in% 34)
+
+nutri7<-lmer(Log_biomass_g_ha_day~   mean_nitrate+ (1|Transect) , 
+             data=site_7)
+summary(nutri7)
+Anova7<-round(Anova(nutri7,test='F'), 2) 
+Anova7 #nitrate
+plot(nutri7)
+qqPlot(resid(nutri7)) 
+
+nutri8<-lmer(Log_biomass_g_ha_day~   mean_nitrate+ (1|Transect) , 
+             data=site_8)
+summary(nutri8)
+Anova8<-round(Anova(nutri8,test='F'), 2) 
+Anova8 #nitrate
+plot(nutri8)
+qqPlot(resid(nutri8)) 
+
+nutri10<-lmer(Log_biomass_g_ha_day~   mean_nitrate+ (1|Transect) , 
+             data=site_10)
+summary(nutri10)
+Anova10<-round(Anova(nutri10,test='F'), 2) 
+Anova10 #nitrate
+plot(nutri10)
+qqPlot(resid(nutri10)) 
+
+nutri12<-lmer(Log_biomass_g_ha_day~   mean_nitrate+ (1|Transect) , 
+              data=site_12)
+summary(nutri12)
+Anova12<-round(Anova(nutri12,test='F'), 2) 
+Anova12 #nitrate
+plot(nutri12)
+qqPlot(resid(nutri12))
 
