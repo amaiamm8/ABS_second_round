@@ -20,7 +20,7 @@ qqPlot(resid(ml))  #  QQ plot looks strange non-transformed- looks ok now!
 
 
 #models for biomass~veg
-veg<-lmer(biomass_g_ha_day~ Tree.Basal.Area_m2+ Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq + (1|Site/Transect) , 
+veg<-lmer(Log_biomass_g_ha_day~ Tree.Basal.Area_m2+ Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq + (1|Site/Transect) , 
                data=data)
 summary(veg)
 Anova<-round(Anova(veg,test='F'), 2) 
@@ -30,14 +30,16 @@ qqPlot(resid(ml))  #  QQ plot
 
 #models for biomass~nutri and veg
 #crash when I use Tree basal area (from here onwards...)
-full<- lmer(biomass_g_ha_day~ Fire.Interval+ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+Avg_pH+  Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq+(1|Site),
+full<- lmer(Log_biomass_g_ha_day~ Fire.Interval+ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+Avg_pH+  Herb.Cover_0.50cm_perc+ Shrub.Cover_50.200cm_perc+perc_myco_host_freq+(1|Site/Transect),
                  data)
 
-full<- lmer(biomass_g_ha_day~ Fire.Interval+ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+Avg_pH +perc_myco_host_freq+(1|Site),   data)
+full<- lmer(Log_biomass_g_ha_day~ Fire.Interval+ mean_ammonia+ mean_nitrate+Ortho_P_mg_kg+Avg_pH +perc_myco_host_freq+(1|Site/Transect),   data)
 summary(full)
 Anova<-round(Anova(full,test='F'), 2) 
 Anova
 plot(full)
+qqPlot(resid(full))  #  QQ plot looks strange non-transformed- looks ok now!
+
 
 #just Interval
 ml<-lmer(Log_biomass_g_ha_day~  Fire.Interval + (1|Site/Transect) , 
@@ -52,7 +54,7 @@ qqPlot(resid(ml))  #  QQ plot looks strange non-transformed- looks ok now!
 
 
 #Ortho_Phos
-m1<-lmer(log10(Ortho_P_mg_kg)~Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=data)
+m1<-lmer(log10(Ortho_P_mg_kg)~ Fire.Interval + (1|Site/Transect) , data=data)
 summary(m1)
 Anova(m1,test='F')
 plot(m1)

@@ -132,3 +132,4 @@ Anova_CVvl<-round(Anova(CVv_low,test='F'), 2)
 Anova_CVvl
 plot(CVv_low)
 qqPlot(resid(CVv_low))
+
