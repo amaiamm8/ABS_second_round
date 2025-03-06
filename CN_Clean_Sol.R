@@ -7,8 +7,8 @@ CN_samps<- read_excel("raw/CNH Sample weights_SMM-spiked-Amaia's result.xlsx")
 CNH_weights <- read_excel("raw/CNH Sample weights_spike_w.xlsx", , 
                                  sheet = "Amaia_Samples")
 CNH_weights <- CNH_weights %>%
-  mutate(Sample_ID = ifelse(Sample_ID == "ol", "orchard leaves", Sample_ID))%>%
-  mutate(Plate_ID = ifelse(Sample_ID %in% "orchard leaves", Sample_ID, Plate_ID))%>%
+  mutate(Sample_ID = ifelse(Sample_ID == "ol", "ol spiked", Sample_ID))%>%
+  mutate(Plate_ID = ifelse(Sample_ID %in% "ol spiked", Sample_ID, Plate_ID))%>%
 group_by(Plate_ID) %>%
   mutate(Plate_ID = case_when(n() > 1 ~ paste0(Plate_ID, "_", row_number()), TRUE ~ Plate_ID)) %>%
   ungroup()
@@ -26,7 +26,7 @@ NH4_mean_N_perc<-CN_samps%>%filter(name=='(NH)42SO4'&!weight=='6.799')%>% summar
 NH4_mean_C_perc<-CN_samps%>%filter(name=='(NH)42SO4'&!weight=='6.799')%>% summarise(mean(`C%`) )%>%pull()
 
 CN_samps <- CN_samps %>%
-  filter(!name %in% c("ol spiked", "(NH)42SO4", "NaHCO3")) %>%
+  filter(!name %in% c("orchard leaves", "(NH)42SO4", "NaHCO3")) %>%
   group_by(name) %>%
   mutate(name = case_when(n() > 1 ~ paste0(name, "_", row_number()), TRUE ~ name)) %>%
   ungroup()
