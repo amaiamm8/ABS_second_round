@@ -24,6 +24,7 @@ CO3_mean_N_perc<-CN_samps%>%filter(name=='NaHCO3'&!weight=='6.95')%>% summarise(
 CO3_mean_C_perc<-CN_samps%>%filter(name=='NaHCO3'&!weight=='6.95')%>% summarise(mean(`C%`) )%>%pull()
 NH4_mean_N_perc<-CN_samps%>%filter(name=='(NH)42SO4'&!weight=='6.799')%>% summarise(mean(`N%`) )%>%pull()
 NH4_mean_C_perc<-CN_samps%>%filter(name=='(NH)42SO4'&!weight=='6.799')%>% summarise(mean(`C%`) )%>%pull()
+
 CN_samps <- CN_samps %>%
   filter(!name %in% c("orchard leaves", "(NH)42SO4", "NaHCO3")) %>%
   group_by(name) %>%
@@ -31,7 +32,7 @@ CN_samps <- CN_samps %>%
   ungroup()
 
 #calc Total spike for C and N
-CN_samps<-spike_w%>%
+CN_Final<-spike_w%>%
   mutate(Carb_spike= (CO3_mg*CO3_mean_C_perc/100)+(NH4_mg*NH4_mean_C_perc/100),#total carbon spike
          Nitr_spike= (CO3_mg*CO3_mean_N_perc/100)+(NH4_mg*NH4_mean_N_perc/100))%>%#total nitrogen spike
   left_join(CN_samps, by=c('Plate_ID'='name'))%>%
