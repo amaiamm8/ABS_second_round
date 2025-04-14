@@ -4,7 +4,7 @@ library(leaflet)
 library(dplyr)
 webshot::install_phantomjs(force = TRUE)
 
-coordinates <- read.csv("site_data_Amaia.csv")
+coordinates <- read.csv("raw/site_data_Amaia.csv")
 
 # Filter based on conditions (e.g., names containing "Place 1")
 filtered_coordinates <- coordinates %>%
@@ -41,7 +41,7 @@ map <- leaflet(filtered_coordinates, options = leafletOptions(zoomControl = FALS
     weight = 1            # Thinner border
   ) %>%
   addScaleBar(position = "topright") %>%
-  addMiniMap(height=300, width = 300 )
+  addMiniMap(height=100, width = 100 )
 map
 
 
@@ -54,4 +54,45 @@ webshot(url = "temp.html",
         delay = 5,
         vwidth = 800,
         vheight = 800)
+
+
+
+# Define color palette based on frequency
+pal <- colorFactor(c("red", "green"), domain = filtered_coordinates$Fire.Interval)
+
+map <- leaflet(filtered_coordinates, options = leafletOptions(zoomControl = FALSE)) %>%
+  addProviderTiles(providers$Esri.WorldImagery) %>%
+  addProviderTiles(providers$OpenStreetMap, 
+                   options = providerTileOptions(opacity = 0.2)) %>%
+  addCircleMarkers(
+    lng = ~Longitude,
+    lat = ~Latitude,
+    label = ~Site,
+    labelOptions = labelOptions(
+      noHide = TRUE,
+      direction = "top",
+      textsize = "10px",
+      style = ~list(
+        "color" = pal(Fire.Interval),
+        "font-family" = "Avenir",
+        "background-color" = pal(Fire.Interval),
+        "border-color" = pal(Fire.Interval),
+        "border-radius" = "5px",
+        "padding" = "1px 2px"
+      )
+    ),
+    radius = 5,
+    fillColor = ~pal(Fire.Interval),  # Assign color based on frequency
+    color = ~pal(Fire.Interval),
+    fillOpacity = 1,
+    weight = 1
+  ) %>%
+  addLegend("bottomright", pal = pal, values = ~Fire.Interval, title = "Fire Interval") %>%
+  addScaleBar(position = "topright") %>%
+  addMiniMap(height = 100, width = 100)
+
+map
+
+# Define color palette for Fire.Interval
+
 

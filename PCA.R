@@ -18,7 +18,7 @@ veg_nute_join <-alldata%>%
 # Filter out rows with NA values in any column of veg_nute_join
 veg_nute_join_clean <- veg_nute_join %>%
   filter(!apply(veg_nute_join, 1, function(x) any(is.na(x))))
-#you need to know what rows you removed from the analysis and why!- because no total P in these rows
+#you need to know what rows you removed from the analysis and why!- because no total P in these rows (transect 1 site34)
 temp<-anti_join(veg_nute_join, veg_nute_join_clean)
 
 #why are you doing this step?
