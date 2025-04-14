@@ -2,7 +2,7 @@ library(tidyverse)
 library(readxl)
 
 #results of CN spiking
-CN_samps<- read_excel("raw/CNH Sample weights_SMM-spiked-Amaia's result.xlsx")
+CN_samps<- read_excel("raw/CNH Sample weights_SMM-spiked-Amaia's result.xlsx")%>%select(-(12:13))
 
 CNH_weights <- read_excel("raw/CNH Sample weights_spike_w.xlsx", , 
                                  sheet = "Amaia_Samples")
@@ -42,4 +42,6 @@ CN_Final<-spike_w%>%
   mutate(perc_N_Samp= (Samp_N/weight_mg)*100,
          perc_C_Samp= (Samp_C/weight_mg)*100)
 
+library(writexl)
 
+write_xlsx(CN_Final, 'outputs/CN_Final_Spike_.xlsx')
