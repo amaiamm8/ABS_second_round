@@ -46,7 +46,7 @@ p<-combined_data%>%
                aes(x=0,y=0, xend=PC1, yend=PC2, group=label),
                arrow = arrow(type = "closed",length=unit(3,'mm')),
                color= 'black') +
-  geom_text(data=scrs_spp%>% filter(abs(PC1) > 1 | abs(PC2) > 1),#use this filter to select most important factos
+  geom_text_repel(data=scrs_spp%>% filter(abs(PC1) > 1 | abs(PC2) > 1),#use this filter to select most important factos
             inherit.aes = FALSE,
             aes(x=PC1, y=PC2, label=label),
             colour='black',size=3, fontface="bold")+ 
@@ -75,5 +75,27 @@ a<-combined_data%>%
 a
 
 
+a <- combined_data %>%
+  ggplot(aes(x = PC1, y = PC2, label = Site)) + 
+  geom_point(aes(colour = Fire.Interval, shape = Fire.Severity), size = 3, stroke = 4) +  # Points
+  geom_segment(data = scrs_spp %>% filter(abs(PC1) > 1 | abs(PC2) > 1),
+               inherit.aes = FALSE,
+               aes(x = 0, y = 0, xend = PC1, yend = PC2, group = label),
+               arrow = arrow(type = "closed", length = unit(3, 'mm')),
+               color = 'black') +  # Vectors for important factors
+  geom_text_repel(data = scrs_spp %>% filter(abs(PC1) > 1 | abs(PC2) > 1),  # Only label important factors
+                  inherit.aes = FALSE,
+                  aes(x = PC1, y = PC2, label = label),
+                  colour = 'black', size = 3, fontface = "bold", box.padding = 0.5, max.overlaps = 10) +  # Repel labels
+  xlab(paste('PC1 (', round(scrs.pct[1], 0), '%)', sep = '')) + 
+  ylab(paste('PC2 (', round(scrs.pct[2], 0), '%)', sep = '')) + 
+  theme_minimal() + 
+  labs(color = "Fire Interval", shape = "Fire Severity")
+
+# Display the plot
+print(a)
+
+#checking the scores for ammonia- was filtered out based on the little pc contribution
+scrs_spp %>% filter(str_detect(label, "mean_ammonia"))
 
             
