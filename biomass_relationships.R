@@ -182,11 +182,22 @@ model <- lmer(biomass_g_ha_day ~ Site + (1 | Transect), data = combined_data)
 
 # Create a boxplot of the raw data
 ggplot(combined_data, aes(x = factor(Site), y = biomass_g_ha_day)) +
-  geom_boxplot() +  # Boxplot of observed biomass values per Site
-  labs(x = "Site", y = "Biomass (g/ha/day)", title = "Biomass Production per Site") +
-  theme_classic()
+  geom_boxplot() +
+  labs(x = "Site", y = "Biomass (g/ha/day)") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
 
 
+summary2<- combined_data %>%
+  group_by(Site)%>%
+  summarise(
+    Min = min(biomass_g_ha_day, na.rm = TRUE),
+    Max = max(biomass_g_ha_day, na.rm = TRUE),
+    Mean = mean(biomass_g_ha_day, na.rm = TRUE),
+    Median = median(biomass_g_ha_day, na.rm = TRUE),
+    SD = sd(biomass_g_ha_day, na.rm = TRUE)
+  )
+summary2
 # Fit the mixed-effects model
 model <- lmer(biomass_g_ha_day ~ Site + (1 | Transect), data = combined_data)
 

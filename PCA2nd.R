@@ -26,6 +26,30 @@ scrs.eig <- explanatory.pca[['CA']]$eig
 scrs.pct <- 100 * scrs.eig/sum(scrs.eig)
 
 
+# Apply the new labels to your scrs_spp dataframe
+
+scrs_spp <- scrs_spp %>%
+  mutate(label = dplyr::recode(as.character(label),
+                               "Tree.Basal.Area_m2" = "Tree Basal Area",
+                               "All.Tree.Canopy.Cover_perc" = "Total Canopy Cover",
+                               "Live.Tree.Canopy.Cover_perc" = "Live Canopy Cover",
+                               "Mean.Litter.Depth_mm" = "Litter Depth",
+                               "perc_myco_host_freq" = "% Mycorrhizal Hosts",
+                               "mean_nitrate" = "Mean Nitrate (1st Round)",
+                               "NH4" = "Ammonium",
+                               "NO3" = "Nitrate",
+                               "Carbon" = "Carbon",
+                               "Nitrogen" = "Nitrogen",
+                               "Total.P"= "Total P",
+                               "Dead.Tree.Canopy.Cover_perc"= "Dead Canopy Cover",
+                               "Herb.Shrub.Connected_0.200cm_perc"= "Herb Shrub Connected",
+                               "Shrub.Connected_50.200cm_perc"= "Shrub Connected",
+                               "Mean.Max.Shrub.Height_cm"= "Mean Maximum Shrub Height",
+                               "Herb.Cover_0.50cm_perc"="Herb Cover",
+                               "Shrub.Cover_50.200cm_perc"= "Shrub Cover",
+                               "Litter.Cover_20mm_perc" = "Litter Cover",
+                               "Ortho_P_mg_kg"="Ortho P (2nd Round)" ))
+
 # Calculate the centroids by taking the average PCA scores for each site
 centroids <- scrs %>% 
   filter(score == 'sites') %>%  # Make sure we're looking at site scores
@@ -98,4 +122,5 @@ print(a)
 #checking the scores for ammonia- was filtered out based on the little pc contribution
 scrs_spp %>% filter(str_detect(label, "mean_ammonia"))
 
-            
+
+
