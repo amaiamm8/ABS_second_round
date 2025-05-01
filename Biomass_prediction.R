@@ -95,8 +95,7 @@ Bag_Site<- left_join(Bag_Site, site_data)
 
 write_xlsx(Bag_Site, "raw/biomass.xlsx")
 
-<<<<<<< HEAD
-=======
+
 library(mgcv)
 model_size <- gam(hyphal_weight ~ harvest_w, data = formuladata)
 # Fit a GLM with a Gaussian distribution (normal distribution)
@@ -134,4 +133,4 @@ newdat <- formuladata %>%
 newdat <- newdat %>%
   distinct(Site, Transect, Location, harvest_w, dry_w, .keep_all = TRUE)%>%
   select(Site, Transect, Location, harvest_w, dry_w, Tube_ID)
->>>>>>> 7334ebe (mini attempts)
+
