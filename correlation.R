@@ -5,26 +5,27 @@ data <- read_excel("raw/alldataforlength.xlsx")
 data_cor<- data%>%
   group_by(Site,Transect)%>%
   mutate(avgLength_mm=mean(Length_mm))%>%
+  mutate(avgLength_um=mean(Length_mm)*1000)%>%
   mutate(avgbiomass=mean(biomass_g_ha_day))%>%
-  select(Site, Transect,avgLength_mm,avgbiomass)%>%
+  select(Site, Transect,avgLength_mm,avgLength_um,avgbiomass)%>%
   distinct()%>%
   ungroup()
 # Calculate correlation
-cor_test<- cor.test(data_cor$avgLength_mm, data_cor$avgbiomass, method = "pearson")
+cor_test<- cor.test(data_cor$avgLength_um, data_cor$avgbiomass, method = "pearson")
 # Extract values
 r_val <- round(cor_test$estimate, 2)
 p_val <- signif(cor_test$p.value, 2)
 
 
 #title = "Correlation between Biomass production and Hyphal width") +
-ggplot(data_cor, aes(x = avgbiomass, y = avgLength_mm)) +
+ggplot(data_cor, aes(x = avgbiomass, y = avgLength_um)) +
   geom_point(alpha = 0.5, color = "blue") +  # Raw data points
   geom_smooth(method = "lm", color = "red", se = TRUE) +  # Overall trend line
   annotate("text", 
            x = Inf, y = Inf, 
            label = paste0("r = ", r_val, ", p = ", p_val),
            hjust = 1.5, vjust = 1.5, size = 3) +
-  labs(x = "Hyphal biomass production (g/ha/day)", y = "Hyphal diameter (mm)")+
+  labs(x = "Hyphal biomass production (g/ha/day)", y = "Hyphal diameter (µm)")+
   theme_classic()
 
 

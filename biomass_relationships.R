@@ -145,11 +145,12 @@ p3 <- ggplot(combined_data, aes(x = Ortho_P_mg_kg, y = biomass_g_ha_day)) +
   theme_classic()
 
 # Mean pH
-p4 <- ggplot(combined_data, aes(x = mean_pH, y = biomass_g_ha_day)) +
+p4 <- ggplot(combined_data, aes(x = Avg_pH, y = biomass_g_ha_day)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE, color = "purple") +
   labs(x = "pH", y = "Biomass (g/ha/day)") +
   theme_classic()
+
 
 # Combine the plots into a 2x2 grid
 (p1 | p2) / (p3 | p4)
@@ -158,9 +159,19 @@ p4 <- ggplot(combined_data, aes(x = mean_pH, y = biomass_g_ha_day)) +
 library(ggplot2)
 
 # Create the boxplot
+# Reorder factor levels
+combined_data$Site <- factor(combined_data$Site, levels = c("7","8","12", "10", "26","34"))
+
+# Plot
+ggplot(combined_data, aes(x = Site, y = biomass_g_ha_day)) +
+  geom_boxplot(fill = "white", color = "black", outlier.shape = 16, outlier.size = 2) +
+  labs(x = "Site", y = "Biomass production (g/ha/day)") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+
 ggplot(combined_data, aes(x = factor(Site), y = biomass_g_ha_day)) +
   geom_boxplot(fill = "white", color = "black", outlier.shape = 16, outlier.size = 2) +
-  labs(x = "Site", y = "Biomass (g/ha/day)", title = "Biomass Variation Across Sites") +
+  labs(x = "Site", y = "Biomass production (g/ha/day)", title = "Biomass Variation Across Sites") +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels if needed
 
@@ -183,7 +194,7 @@ model <- lmer(biomass_g_ha_day ~ Site + (1 | Transect), data = combined_data)
 # Create a boxplot of the raw data
 ggplot(combined_data, aes(x = factor(Site), y = biomass_g_ha_day)) +
   geom_boxplot() +
-  labs(x = "Site", y = "Biomass (g/ha/day)") +
+  labs(x = "Site", y = "Biomass production (g/ha/day)") +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5))
 

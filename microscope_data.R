@@ -2,7 +2,7 @@ setwd("~/Desktop/Thesis/Rawdata")
 library(readxl)
 library(dplyr)
 library(openxlsx)
-diam <- read_excel("Rawdata/Updated hyphal length.xlsx", "Sheet1")
+diam <- read_excel("raw/Updated hyphal length.xlsx", "Sheet1")
 #average diameter measurements
 diam <- diam %>%
   group_by(Slide) %>%
@@ -54,10 +54,10 @@ sum(trait_scoring$Rhizomorph == "y")
 sum(trait_scoring$Spores == "y")
 
 #save back to the existing excel
-wb <- loadWorkbook("Rawdata/Updated hyphal length.xlsx")
+wb <- loadWorkbook("raw/Updated hyphal length.xlsx")
 
 # Write data to a specific sheet
 writeData(wb, sheet = "Sheet1", x = diam)  
 # Save the updated workbook
-saveWorkbook(wb, "Rawdata/Updated hyphal length.xlsx", overwrite = TRUE)
+saveWorkbook(wb, "raw/Updated hyphal length.xlsx", overwrite = TRUE)
 
